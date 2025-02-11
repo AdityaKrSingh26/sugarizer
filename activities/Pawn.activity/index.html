@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>My Activity</title>
+  <meta name="viewport"
+    content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, viewport-fit=cover" />
+  <link rel="stylesheet" media="not screen and (device-width: 1200px) and (device-height: 900px)"
+    href="lib/sugar-web/graphics/css/sugar-96dpi.css">
+  <link rel="stylesheet" media="screen and (device-width: 1200px) and (device-height: 900px)"
+    href="lib/sugar-web/graphics/css/sugar-200dpi.css">
+  <link rel="stylesheet" href="css/activity.css">
+  <script data-main="js/loader" src="lib/require.js"></script>
+  <script type="text/javascript" src="../../cordova.js"></script>
+</head>
+
+<body>
+  <div id="main-toolbar" class="toolbar">
+    <button class="toolbutton" id="activity-button" title="My Activity"></button>
+    <div class="seprator-line"></div>
+    <button class="toolbutton" id="create-new" title="Create New"></button>
+    <button class="toolbutton" id="play-button" title="Play"></button>
+    <button class="toolbutton" id="speed-button" title="Speed"></button>
+    <div class="seprator-line"></div>
+    <button class="toolbutton" id="clear-button" title="Clear All"></button>
+    <div class="seprator-line"></div>
+    <button class="toolbutton" id="export-button" title="Export Video"></button>
+    <button class="toolbutton pull-right" id="stop-button" title="Stop"></button>
+  </div>
+
+  <!-- The content of your activity goes inside the canvas -->
+  <div id="canvas">
+    <div class="main-container">
+      <div class="sidebar">
+        <h3>Templates</h3>
+        <button class="template" id="runBtn">
+          <div id="run-icon"></div>
+          <p>Run</p>
+        </button>
+        <button class="template" id="danceBtn">
+          <div id="dance-icon"></div>
+          <p>Dance</p>
+        </button>
+      </div>
+      <div class="canvas-container">
+        <canvas id="stickman-canvas"></canvas>
+        <div class="timeline" id="timeline"></div>
+      </div>
+
+    </div>
+
+
+</body>
+
+</html>
