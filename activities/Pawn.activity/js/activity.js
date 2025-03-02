@@ -71,12 +71,32 @@ define(["sugar-web/activity/activity"], function (activity) {
 				// Control buttons
 				document.getElementById('play-button').addEventListener('click', () => this.play());
 				document.getElementById('pause-button').addEventListener('click', () => this.pause());
-				document.getElementById('create-new').addEventListener('click', () => this.createNew());
+				// document.getElementById('create-new').addEventListener('click', () => this.createNew());
+				document.getElementById('create-new').addEventListener('click', () => this.addFrame());
 				document.getElementById('export-button').addEventListener('click', () => this.exportAnimation());
 				document.getElementById('clear-button').addEventListener('click', () => this.createNew()); // Add clear handler
 				document.getElementById('danceBtn').addEventListener('click', () => this.loadTemplate('dance'));
 
-				// Speed control
+				// Speed control dropdown
+				const speedButton = document.getElementById('speed-button');
+				const speedDropdown = document.getElementById('speed-dropdown');
+
+				speedButton.addEventListener('click', (e) => {
+					e.stopPropagation();
+					speedDropdown.classList.toggle('show');
+					// Position the dropdown under the button
+					const buttonRect = speedButton.getBoundingClientRect();
+					speedDropdown.style.left = buttonRect.left + 'px';
+				});
+
+				// Close dropdown when clicking outside
+				document.addEventListener('click', (e) => {
+					if (!speedDropdown.contains(e.target) && !speedButton.contains(e.target)) {
+						speedDropdown.classList.remove('show');
+					}
+				});
+
+				// Speed input handler
 				document.getElementById('speed').addEventListener('input', (e) => {
 					this.speed = parseFloat(e.target.value);
 					document.getElementById('speedValue').textContent = this.speed + 'x';
@@ -131,8 +151,7 @@ define(["sugar-web/activity/activity"], function (activity) {
 			}
 
 			constrainJoints() {
-				const iterations = 15; // Increased from 10
-				const stiffness = 0.8; // Increased from 0.5 for more rigid connections
+				const iterations = 5; // More iterations = more rigid constraints
 
 				for (let i = 0; i < iterations; i++) {
 					this.constraints.forEach(constraint => {
@@ -144,27 +163,20 @@ define(["sugar-web/activity/activity"], function (activity) {
 						const dy = joint2.y - joint1.y;
 						const currentDistance = Math.sqrt(dx * dx + dy * dy);
 
-						if (currentDistance === 0) return;
+						// Skip if distance is already correct
+						if (currentDistance === constraint.distance) return;
 
 						// Calculate the difference from desired distance
 						const difference = (constraint.distance - currentDistance) / currentDistance;
 
-						// Apply stiffness to the correction
-						const correction = difference * stiffness;
+						// Move joints to maintain constraint
+						const offsetX = dx * 0.5 * difference;
+						const offsetY = dy * 0.5 * difference;
 
-						// Calculate offsets
-						const offsetX = dx * correction;
-						const offsetY = dy * correction;
-
-						// Move both joints unless one is being dragged
-						if (joint1 !== this.selectedJoint) {
-							joint1.x -= offsetX * 0.5;
-							joint1.y -= offsetY * 0.5;
-						}
-						if (joint2 !== this.selectedJoint) {
-							joint2.x += offsetX * 0.5;
-							joint2.y += offsetY * 0.5;
-						}
+						joint1.x -= offsetX;
+						joint1.y -= offsetY;
+						joint2.x += offsetX;
+						joint2.y += offsetY;
 					});
 				}
 			}
@@ -174,26 +186,14 @@ define(["sugar-web/activity/activity"], function (activity) {
 				const mouseX = e.clientX - rect.left;
 				const mouseY = e.clientY - rect.top;
 
-				// Increase detection radius and make all joints selectable
-				const selectionRadius = 15; // Increased from 10 to 15 pixels
-
-				// Find the closest joint within selection radius
-				let closestJoint = null;
-				let minDistance = selectionRadius;
-
-				this.joints.forEach(joint => {
+				// Find the closest joint within 10 pixels
+				this.selectedJoint = this.joints.find(joint => {
 					const dx = joint.x - mouseX;
 					const dy = joint.y - mouseY;
-					const distance = Math.sqrt(dx * dx + dy * dy);
-
-					if (distance < minDistance) {
-						minDistance = distance;
-						closestJoint = joint;
-					}
+					return Math.sqrt(dx * dx + dy * dy) < 10;
 				});
 
-				if (closestJoint) {
-					this.selectedJoint = closestJoint;
+				if (this.selectedJoint) {
 					this.isDragging = true;
 				}
 			}
@@ -201,19 +201,12 @@ define(["sugar-web/activity/activity"], function (activity) {
 			handleMouseMove(e) {
 				if (this.isDragging && this.selectedJoint) {
 					const rect = this.canvas.getBoundingClientRect();
-					const newX = e.clientX - rect.left;
-					const newY = e.clientY - rect.top;
+					this.selectedJoint.x = e.clientX - rect.left;
+					this.selectedJoint.y = e.clientY - rect.top;
 
-					// Update selected joint position
-					this.selectedJoint.x = newX;
-					this.selectedJoint.y = newY;
+					// Apply constraints after moving a joint
+					this.constrainJoints();
 
-					// Apply constraints multiple times for better stability
-					for (let i = 0; i < 15; i++) { // Increased iterations
-						this.constrainJoints();
-					}
-
-					// Save the current frame after moving
 					this.saveCurrentFrame();
 				}
 			}
@@ -367,8 +360,72 @@ define(["sugar-web/activity/activity"], function (activity) {
 			}
 
 			render() {
+				// Clear canvas
 				this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+				// Draw onion skin of previous frame
+				if (this.frames.length > 1) {
+					// Get previous frame index
+					const prevFrameIndex = this.currentFrame === 0 ?
+						this.frames.length - 1 : this.currentFrame - 1;
+
+					// Save current context settings
+					this.ctx.save();
+
+					// Set semi-transparent style for onion skin
+					this.ctx.strokeStyle = 'rgba(150, 150, 255, 0.4)';
+					this.ctx.fillStyle = 'rgba(150, 150, 255, 0.2)';
+					this.ctx.lineWidth = 3;
+
+					// Draw previous frame
+					const prevFrame = this.frames[prevFrameIndex];
+
+					// Draw body line
+					this.ctx.beginPath();
+					this.ctx.moveTo(prevFrame[0].x, prevFrame[0].y); // Head to body
+					this.ctx.lineTo(prevFrame[1].x, prevFrame[1].y); // Body to hips
+					this.ctx.lineTo(prevFrame[2].x, prevFrame[2].y);
+					this.ctx.stroke();
+
+					// Draw legs
+					this.ctx.beginPath();
+					this.ctx.moveTo(prevFrame[2].x, prevFrame[2].y);
+					this.ctx.lineTo(prevFrame[3].x, prevFrame[3].y);
+					this.ctx.lineTo(prevFrame[4].x, prevFrame[4].y);
+					this.ctx.stroke();
+
+					this.ctx.beginPath();
+					this.ctx.moveTo(prevFrame[2].x, prevFrame[2].y);
+					this.ctx.lineTo(prevFrame[5].x, prevFrame[5].y);
+					this.ctx.lineTo(prevFrame[6].x, prevFrame[6].y);
+					this.ctx.stroke();
+
+					// Draw arms
+					this.ctx.beginPath();
+					this.ctx.moveTo(prevFrame[1].x, prevFrame[1].y);
+					this.ctx.lineTo(prevFrame[7].x, prevFrame[7].y);
+					this.ctx.lineTo(prevFrame[8].x, prevFrame[8].y);
+					this.ctx.stroke();
+
+					this.ctx.beginPath();
+					this.ctx.moveTo(prevFrame[1].x, prevFrame[1].y);
+					this.ctx.lineTo(prevFrame[9].x, prevFrame[9].y);
+					this.ctx.lineTo(prevFrame[10].x, prevFrame[10].y);
+					this.ctx.stroke();
+
+					// Draw head
+					this.ctx.beginPath();
+					this.ctx.arc(prevFrame[0].x, prevFrame[0].y, 15, 0, Math.PI * 2);
+					this.ctx.stroke();
+
+					// Restore context settings
+					this.ctx.restore();
+				}
+
+				// Draw current frame
 				this.drawStickman();
+
+				// Continue animation loop
 				requestAnimationFrame(() => this.render());
 			}
 

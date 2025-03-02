@@ -1,5 +1,5 @@
 #main-toolbar #activity-button {
-  background-image: url(../activity/image.png);
+  background-image: url(../activity/activity-icon.svg);
 }
 
 #main-toolbar #create-new {
@@ -30,17 +30,37 @@
   background-image: url(../icons/pause.svg);
 }
 
+/* Add these styles */
+.speed-dropdown {
+  display: none;
+  position: absolute;
+  top: 55px;
+  background: #282828;
+  /* border: 1px solid #ddd; */
+  /* border-radius: 4px; */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  padding: 10px;
+  z-index: 1000;
+}
+
+.speed-dropdown.show {
+  display: block;
+}
+
+.speed-control {
+  display: flex;
+  align-items: center;
+  padding: 5px;
+}
+
 #speed {
-  width: 100px;
+  width: 120px;
   margin: 0 10px;
-  vertical-align: middle;
 }
 
 #speedValue {
-  display: inline-block;
   min-width: 30px;
-  color: #666;
-  vertical-align: middle;
+  text-align: center;
 }
 
 /* Toolbar seprator */
@@ -184,15 +204,11 @@ body {
 
 button {
   padding: 0.5rem 1rem;
-  background: #4CAF50;
+  background: #282828;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-}
-
-button:hover {
-  background: #45a049;
 }
 
 .template {
@@ -208,7 +224,10 @@ button:hover {
 }
 
 .template:hover {
-  background: #45a049;
+  background-color: #fff;
+  border-color: #282828;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 #run-icon {
@@ -243,7 +262,7 @@ button:hover {
 }
 
 .frame.active {
-  border-color: #4CAF50;
+  border-color: #282828;
 }
 
 .delete-frame {
@@ -253,7 +272,7 @@ button:hover {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #ff4444;
+  background: #282828;
   color: white;
   border: none;
   cursor: pointer;
@@ -266,5 +285,5 @@ button:hover {
 }
 
 .delete-frame:hover {
-  background: #ff0000;
+  background: #282828;
 }
