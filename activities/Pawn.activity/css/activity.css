@@ -26,6 +26,23 @@
   padding: 5px;
 }
 
+#main-toolbar #pause-button {
+  background-image: url(../icons/pause.svg);
+}
+
+#speed {
+  width: 100px;
+  margin: 0 10px;
+  vertical-align: middle;
+}
+
+#speedValue {
+  display: inline-block;
+  min-width: 30px;
+  color: #666;
+  vertical-align: middle;
+}
+
 /* Toolbar seprator */
 .seprator-line {
   background-color: #808080;
@@ -67,6 +84,9 @@ body {
   display: flex;
   flex: 1;
   overflow: hidden;
+  height: calc(100vh - 55px);
+  /* Subtract toolbar height */
+  /* padding: 16px; */
 }
 
 #newBtn {
@@ -74,35 +94,85 @@ body {
 }
 
 .sidebar {
-  width: 100px;
+  width: 120px;
+  /* Increase width slightly */
+  min-width: 120px;
+  /* Prevent shrinking */
   background: #fff;
   padding: 1rem;
   border-right: 3px solid #ddd;
   overflow-y: auto;
   text-align: center;
+  /* margin-right: 16px; */
 }
 
 .canvas-container {
-  max-height: calc(100vh - 55px);
   flex: 1;
   display: flex;
   flex-direction: column;
   background: #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: 100%;
 }
 
-canvas {
+/* canvas {
   height: calc(100vh - 55px - 120px);
+} */
+
+#stickman-canvas {
+  flex: 1;
+  width: 100%;
+  height: calc(100% - 120px);
+  /* Subtract timeline height */
+  background: #fff;
 }
 
 .timeline {
   height: 120px;
+  min-height: 120px;
   background: #fff;
   border-top: 3px solid #ddd;
   padding: 1rem;
   display: flex;
   align-items: center;
-  overflow-x: auto;
+  overflow-x: scroll;
+  /* Force scrollbar to show */
+  overflow-y: hidden;
+  white-space: nowrap;
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f1f1f1;
+  /* Add smooth scrolling */
+  scroll-behavior: smooth;
+  /* Ensure content doesn't wrap */
+  flex-wrap: nowrap;
+  /* Add padding for scrollbar */
+  padding-bottom: 12px;
+}
+
+/* Update frame styling to ensure minimum width */
+.frame {
+  margin: 0px 3px;
+  min-width: 60px;
+  /* Force minimum width */
+  width: 60px;
+  height: 60px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  /* Prevent shrinking */
+}
+
+/* Container for all frames */
+#frames-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  /* Ensure container doesn't wrap */
+  flex-wrap: nowrap;
+  /* Force minimum width for content */
+  min-width: min-content;
 }
 
 .controls {
