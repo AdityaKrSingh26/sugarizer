@@ -183,16 +183,18 @@ define(["sugar-web/activity/activity"], function (activity) {
 
 			handleMouseDown(e) {
 				const rect = this.canvas.getBoundingClientRect();
-				const mouseX = e.clientX - rect.left;
-				const mouseY = e.clientY - rect.top;
-
+				const scaleX = this.canvas.width / rect.width;
+				const scaleY = this.canvas.height / rect.height;
+				const mouseX = (e.clientX - rect.left) * scaleX;
+				const mouseY = (e.clientY - rect.top) * scaleY;
+			
 				// Find the closest joint within 10 pixels
 				this.selectedJoint = this.joints.find(joint => {
 					const dx = joint.x - mouseX;
 					const dy = joint.y - mouseY;
 					return Math.sqrt(dx * dx + dy * dy) < 10;
 				});
-
+			
 				if (this.selectedJoint) {
 					this.isDragging = true;
 				}
@@ -201,12 +203,14 @@ define(["sugar-web/activity/activity"], function (activity) {
 			handleMouseMove(e) {
 				if (this.isDragging && this.selectedJoint) {
 					const rect = this.canvas.getBoundingClientRect();
-					this.selectedJoint.x = e.clientX - rect.left;
-					this.selectedJoint.y = e.clientY - rect.top;
-
+					const scaleX = this.canvas.width / rect.width;
+					const scaleY = this.canvas.height / rect.height;
+					this.selectedJoint.x = (e.clientX - rect.left) * scaleX;
+					this.selectedJoint.y = (e.clientY - rect.top) * scaleY;
+			
 					// Apply constraints after moving a joint
 					this.constrainJoints();
-
+			
 					this.saveCurrentFrame();
 				}
 			}
