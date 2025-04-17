@@ -1,1 +1,0 @@
-// HACK: dummy cordova.js to avoid error when not on Android. On Android, will be replaced by the real one if activities need it.

@@ -289,8 +289,7 @@
 	"TutoActivityAbecedariumactivity": "Abecedarium is an abecedary activity to learn its alphabet using images, sounds and words.",
 	"TutoActivityBlockrainactivity": "Blockrain is a clone of the classic Tetris game. The objective of the game is to manipulate blocks to create horizontal lines.",
 	"TutoActivityCalculateactivity": "Calculate is a calculator. The interface provides the simplest functions directly, but it also supports more complicated math and variables and even basic plotting.",
-	"TutoActivityChartactivity": "Create your charts and organize your information! Try the best chart for your case.",
-	"TutoActivityChatactivity": "Chat provides a simple interface for collaborative discussion between users through the network. Use Neighborhood View to share a conversation.",
+	"TutoActivityChatPrototypeactivity": "Chat provides a simple interface for collaborative discussion between users through the network. Use Neighborhood View to share a conversation.",
 	"TutoActivityChessactivity": "Chess activity is a fun way to learn and challenge your friends to a game of Chess.",
 	"TutoActivityClockactivity": "Clock is a simple activity to learn how to read and tell the time.",
 	"TutoActivityColorMyWorldactivity": "Color My World activity let you explore the world and its countries. Fill countries with color you like or use the interactive mode to find location of countries on the offline map.",
@@ -370,7 +369,6 @@
 	"PrivacyRemoveRemote": "Delete server account",
 	"TutoActivityMeasureactivity": "Measure activity is an activity to learn the concepts of sound.",
 	"TutoActivityStoryactivity": "Story Activity uses images to prompt you to tell a story. You should try to tell a story that ties the images together into a comprehensive narrative.",
-	"TutoActivity3DVolumeactivity": "Explore the world of volumes with this interactive simulator! Add and remove volumes of different shapes and colors, transform them into dice, rotate, zoom, and shake the board. And share the fun and learning in real-time with friends!",
 	"FilterAssignment": "Filter Assignments",
 	"SecondsSubmitted": "Submitted seconds ago",
 	"Submitted": "Submitted {{time}} ago",
@@ -395,6 +393,5 @@
 	"ErrorLoadingFileAssignment": "Cannot Duplicate the Assignment Entry {{file}}",
 	"SortByDueDate": "Sort by due date",
 	"CannotDuplicateAssignment": "Cannot duplicate assignment entry",
-	"CannotDeleteAssignment": "Cannot delete assignment entry",
-	"LoginRedirect": "Please login or create user first"
+	"CannotDeleteAssignment": "Cannot delete assignment entry"
 }
