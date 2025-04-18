@@ -190,6 +190,29 @@ define(["sugar-web/datastore"], function(datastore) {
 		await journal.saveDatastoreObject(null, metadata, text); // Save New object
 	}
 
+	journal.getSize = async function() {
+		// Compute local storage size
+		var used = 0;
+		for(var x in localStorage) {
+			var amount = (localStorage[x].length * 2);
+			if (!isNaN(amount)) {
+				used += amount;
+			}
+		}
+
+		// Compute file size
+		var results = datastore.find();
+		for (var i = 0 ; i < results.length ; i++) {
+			var entry = results[i];
+			var textsize = entry.metadata["textsize"];
+			if (textsize) {
+				used += textsize;
+			}
+		}
+
+		return used;
+	}
+
 	// Clean local journal
 	journal.cleanLocal = function() {
 		return new Promise(function(resolve, reject) {

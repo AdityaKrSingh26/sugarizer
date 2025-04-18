@@ -97,6 +97,12 @@ const AboutComputer = {
 		}
 	},
 
+	async mounted() {
+		let bytes = await sugarizer.modules.journal.getSize();
+		let formatted = sugarizer.modules.i18next.getFormattedSize(bytes);
+		this.Storage = this.$t("StorageSize", {used: bytes, formatted: formatted});
+	},
+
 	methods: {
 
 		close(ref) {
