@@ -841,6 +841,13 @@ define([
 		}
 		function remove(intersectedObject, index) {
 			let num = 0;
+
+			//to ensure scores are updated before removal
+			if (world.hasActiveBodies === false && throwingDice) {
+				getScores();
+				throwingDice = false;
+			}
+
 			for (let i = 0; i < diceArray.length; i++) {
 				if (diceArray[i][3]) {
 					num++;
@@ -1466,6 +1473,7 @@ define([
 			if (diceArray.length > 0) {
 				scoresObject.lastRoll = "";
 				scoresObject.presentScore = 0;
+				updateElements();
 				for (let i = 0; i < diceArray.length; i++) {
 					diceArray[i][1].angularVelocity.set(
 						diceArray[i][7],
