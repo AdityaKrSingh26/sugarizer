@@ -10,13 +10,24 @@ const appVue = Vue.createApp({
 		}
 	},
 	
-	created: function () {
+	created: async function () {
+		await this.checkReset();
 		this.checkUserLoggedIn();
 	},
 
 	methods: {
 		setIsFirstScreen(value) {
 			this.isFirstScreen = value;
+		},
+
+		async checkReset() {
+			if (location.href.indexOf("rst=1") != -1) {
+				await sugarizer.modules.settings.reinitialize(true);
+				location.assign(location.href.replace(/\?rst=?./g,"?rst=0"));
+			} else if (location.href.indexOf("rst=2") != -1) {
+				await sugarizer.modules.settings.reinitialize(false);
+				location.assign(location.href.replace(/\?rst=?./g,"?rst=0"));
+			}
 		},
 
 		checkUserLoggedIn() {
