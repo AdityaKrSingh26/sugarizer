@@ -9,3 +9,4 @@ TODO list:
 - [ ] Add tutorial
 - [ ] Reimplement [launch mode](https://github.com/llaske/sugarizer/commit/a49463cfda3a5c83961ea2898688dba032842760), added to 1.9.0 - work only when user already connected
 - [ ] Reimplement [No Server mode](https://github.com/llaske/sugarizer/issues/356)
+- [ ] Reimplement [Changing default server](https://github.com/llaske/sugarizer/pull/926)
