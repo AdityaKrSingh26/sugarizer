@@ -225,6 +225,9 @@ const LoginScreen = {
 
 			if (this.index.currentIndex < this.index.maxIndex) {
 				if (this.index.currentIndex === 0 && this.details.serverAddress.length > 0) { // server address
+					if (this.details.serverAddress[this.details.serverAddress.length-1] == '/') {
+						this.details.serverAddress = this.details.serverAddress.substr(0, this.details.serverAddress.length-1);
+					}
 					await sugarizer.modules.server.getServerInformation(this.details.serverAddress).then((info) => {
 						this.index.currentIndex++;
 					}, (error) => {
