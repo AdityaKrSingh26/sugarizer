@@ -176,15 +176,15 @@ const HomeScreen = {
 		async setupUserAndJournal() {
 			try {
 				const user = await sugarizer.modules.user.get();
-				this.$refs.buddyIcon.wait().then(() => {
-					this.buddycolor = user.color;
-				});
 				sugarizer.modules.activities.updateFavorites(user.favorites);
-
-				await this.getJournal();
 				this.activities = sugarizer.modules.activities.getFavorites();
 				this.username = user.name;
 				this.favactivities = sugarizer.modules.activities.getFavoritesName();
+
+				await this.$refs.buddyIcon.wait();
+				this.buddycolor = user.color;
+
+				await this.getJournal();
 			} catch (error) {
 				throw new Error('Unable to load the user, error ' + error);
 			}

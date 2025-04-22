@@ -105,6 +105,7 @@ define([], function() {
 			.load()
 			.catch((e) => console.error(e));
 		signupData.favorites = sugarizer.modules.activities.getFavoritesName();
+		signupData.activities = sugarizer.modules.activities.get();
 
 		// In the app, create the user locally
 		if (sugarizer.getClientType() === sugarizer.constant.appType && (!baseurl || baseurl.length === 0)) {
