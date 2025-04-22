@@ -19,6 +19,7 @@ let sugarizer = {
 		desktopAppType: 3,
 		sugarizerVersion: '2.0.0',
 		noServerMode: false,
+		defaultServerUrl: "https://server.sugarizer.org",
 		platform: {
 			ios: /(iPhone|iPad|iPod)/.test(navigator.userAgent),
 			android: (navigator.userAgent.indexOf("Android") != -1),

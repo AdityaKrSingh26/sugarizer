@@ -66,6 +66,19 @@ define([], function() {
 		return serverUrl;
 	}
 
+	// Retrieve default server URL
+	server.getDefaultServerUrl = function() {
+		let defaultStored = localStorage.getItem('sugar_default_server');
+		return defaultStored ? defaultStored : sugarizer.constant.defaultServerUrl;
+	}
+
+	// Set default server URL
+	server.setDefaultServerUrl = function(serverurl) {
+		if (serverurl && serverurl.length) {
+			localStorage.setItem('sugar_default_server', serverurl);
+		}
+	}
+
 	// Get URL to retrieve activities from server
 	server.getActivitiesUrl = function() {
 		var params = server.getToken();
