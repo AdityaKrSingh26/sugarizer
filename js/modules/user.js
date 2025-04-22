@@ -185,22 +185,22 @@ define([], function() {
 	}
 	
 	// Update user information
-	user.update = function(data) {
+	user.update = function(data, dataLocal = null) {
 		return new Promise((resolve, reject) => {
-			// In the app, set the user locally except if the user is connected to a server
-			if (sugarizer.getClientType() === sugarizer.constant.appType && !sugarizer.modules.user.isConnected()) {
-				sugarizer.modules.settings.setUser(data);
-				resolve(sugarizer.modules.settings.getUser());
-				return;
-			}
+			// update the user locally
+			sugarizer.modules.settings.setUser(dataLocal ? dataLocal : data);
 
 			// Update user on the server
-			sugarizer.modules.server.putUser(null, data, sugarizer.modules.user.getServerURL()).then((user) => {
-				sugarizer.modules.settings.setUser(data);
-				resolve(user);
-			}, (error) => {
-				reject(error);
-			});
+			if (sugarizer.modules.user.isConnected()) {
+				sugarizer.modules.server.putUser(null, data, sugarizer.modules.user.getServerURL()).then((user) => {
+					sugarizer.modules.settings.setUser(data);
+					resolve(user);
+				}, (error) => {
+					reject(error);
+				});
+			} else {
+				resolve(sugarizer.modules.settings.getUser());
+			}
 		});
 	}
 
