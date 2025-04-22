@@ -21,7 +21,10 @@ const LoginScreen = {
 	<form>
 		<div id="loginscreen_server" class="column" v-show="index.currentIndex === 0">
 			<div class="firstscreen_text" id="serverurl">{{$t('ServerUrl')}}</div>
-			<input ref="serverAddress" name="server" type="text" class="input_field" v-model="details.serverAddress" @keyup="handleEnterKey">
+			<div @click="unlockServerAddress">
+				<div ref="serverOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;"></div>
+				<input ref="serverAddress" disabled="true" name="server" type="text" class="input_field locked_field" v-model="details.serverAddress" @keyup="handleEnterKey">
+			</div>
 		</div>
 		<div id="loginscreen_name" class="column" v-show="index.currentIndex === 1">
 			<div class="firstscreen_text" id="name">{{$t('Name')}}</div>
@@ -148,6 +151,8 @@ const LoginScreen = {
 	created: function () {
 		if (sugarizer.getClientType() === sugarizer.constant.webAppType) {
 			this.details.serverAddress = sugarizer.modules.server.getServerUrl();
+		} else {
+			this.details.serverAddress = sugarizer.modules.server.getDefaultServerUrl();
 		}
 	},
 
@@ -217,6 +222,8 @@ const LoginScreen = {
 				this.$emit('propModified', false);
 			}
 			this.warning.show = false;
+			this.$refs.serverOverlay.style.display = 'block';
+			this.$refs.serverAddress.setAttribute('disabled', 'true');
 		},
 
 		async nextItem() {
@@ -225,6 +232,11 @@ const LoginScreen = {
 
 			if (this.index.currentIndex < this.index.maxIndex) {
 				if (this.index.currentIndex === 0 && this.details.serverAddress.length > 0) { // server address
+					if (this.details.serverAddress.indexOf('!default') !== -1) {
+						this.details.serverAddress = this.details.serverAddress.replace('!default', '');
+						sugarizer.modules.server.setDefaultServerUrl(this.details.serverAddress);
+						sugarizer.modules.humane.log(this.$t('DefaultServerUrlSet', { url: this.details.serverAddress }));
+					}
 					if (this.details.serverAddress[this.details.serverAddress.length-1] == '/') {
 						this.details.serverAddress = this.details.serverAddress.substr(0, this.details.serverAddress.length-1);
 					}
@@ -278,6 +290,15 @@ const LoginScreen = {
 				}
 			}
 			this.isLoading = false;
+			this.$refs.serverOverlay.style.display = 'block';
+			this.$refs.serverAddress.setAttribute('disabled', 'true');
+		},
+
+		unlockServerAddress() {
+			this.$refs.serverOverlay.style.display = 'none';
+			this.$refs.serverAddress.removeAttribute('disabled');
+			this.$refs.serverAddress.focus();
+			this.$refs.serverAddress.select();
 		},
 
 		handleEnterKey(event) {

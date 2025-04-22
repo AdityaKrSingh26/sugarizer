@@ -62,6 +62,13 @@ html, button {
 	background-color: #e5e5e5;
 }
 
+.locked_field:disabled {
+	background-image: url(../icons/locked.svg);
+	background-repeat: no-repeat;
+	background-position: top 3px right 10px;
+	background-size: 20px 20px;
+}
+
 .input_field:focus {	
 	outline: none;
 	background-color: white;
