@@ -317,7 +317,7 @@ const LoginScreen = {
 		},
 
 		login(baseurl, name, password) {
-			if (sugarizer.getClientType() === sugarizer.constant.appType && this.details.serverAddress.length == 0) {
+			if (sugarizer.getClientType() === sugarizer.constant.appType && baseurl.length == 0) {
 				app.updateFavicon();
 				sugarizer.modules.history.addUser({ name: name, color: this.details.color, server: { url: baseurl } });
 				this.$emit('updateIsFirstScreen', false);
