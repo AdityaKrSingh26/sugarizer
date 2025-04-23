@@ -8,20 +8,25 @@ const HomeScreen = {
 	template: ` <div class="homescreen" ref="homescreen">
 							<transition-group name="fade">
 								<div v-for="(activity, index) in restrictedModeInfo.activities || activities" :key="activity.id">
-									<icon
-										:size="constant.iconSizeStandard"
-										:id="activity.id"
-										:ref="'activity'+activity.id"
-										class="home-icon"
-										:svgfile="activity.directory + '/' + activity.icon"
-										:x="restrictedModeInfo.positions != undefined ? restrictedModeInfo.positions[index].x : (activityPositions[index] ? activityPositions[index].x : 0)"
-										:y="restrictedModeInfo.positions != undefined ? restrictedModeInfo.positions[index].y : (activityPositions[index] ? activityPositions[index].y : 0)"
-										isNative="true"
-										:disabled="false"
-										v-on:click="runActivity(activity)"
-										v-on:mouseover="showPopupTimer($event, activity.id)"
-										v-on:mouseout="removePopupTimer($event)"
-									/>
+									<div
+										v-show="(activityPositions[index] || 
+												(restrictedModeInfo.positions && restrictedModeInfo.positions[index]))"
+									>
+										<icon
+											:size="constant.iconSizeStandard"
+											:id="activity.id"
+											:ref="'activity'+activity.id"
+											class="home-icon"
+											:svgfile="activity.directory + '/' + activity.icon"
+											:x="restrictedModeInfo.positions != undefined ? restrictedModeInfo.positions[index].x : (activityPositions[index] ? activityPositions[index].x : 0)"
+											:y="restrictedModeInfo.positions != undefined ? restrictedModeInfo.positions[index].y : (activityPositions[index] ? activityPositions[index].y : 0)"
+											isNative="true"
+											:disabled="false"
+											v-on:click="runActivity(activity)"
+											v-on:mouseover="showPopupTimer($event, activity.id)"
+											v-on:mouseout="removePopupTimer($event)"
+										/>
+									</div>
 								</div>
 							</transition-group>
 							<transition name="bounce" appear>
