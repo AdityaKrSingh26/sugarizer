@@ -160,7 +160,7 @@ const FirstScreen = {
 		},
 
 		isDesktop() {
-			return sugarizer.getClientPlatform() === sugarizer.constant.desktopAppType;
+			return sugarizer.getClientPlatform() === sugarizer.constant.desktopAppType && !this.showLoginScreen;
 		},
 		quitApp() {
 			sugarizer.quitApp();
