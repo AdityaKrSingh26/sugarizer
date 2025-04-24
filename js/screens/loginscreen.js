@@ -218,6 +218,9 @@ const LoginScreen = {
 		prevItem() {
 			if (this.index.currentIndex > this.index.minIndex) {
 				this.index.currentIndex--;
+				if (this.index.currentIndex == 2 && sugarizer.getClientType() === sugarizer.constant.appType) {
+					this.index.currentIndex--;
+				}
 			} else {
 				this.$emit('propModified', false);
 			}
