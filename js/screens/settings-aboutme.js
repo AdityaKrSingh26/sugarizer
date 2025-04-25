@@ -178,10 +178,15 @@ const AboutMe = {
 		},
 
 		async updateUser(name, colorIndex) {
-			const color = sugarizer.modules.xocolor.get(colorIndex);
-			sugarizer.modules.user.update({ name: name, color: color }).then(() => {
-				sugarizer.reload();
-			});
+			const colorvalue = sugarizer.modules.xocolor.get(colorIndex);
+			sugarizer.modules.user
+				.update(
+					{ name: name, color: colorvalue }, //for server only store necesssary fields
+					{ name: name, colorvalue: colorvalue, color: colorIndex },
+				)
+				.then(() => {
+					sugarizer.reload();
+				});
 		},
 
 		async okClicked() {
