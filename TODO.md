@@ -1,8 +1,8 @@
 TODO list:
 
-- [ ] When changing buddy color in file mode, the icon become black
-- [ ] On Electron, the Journal doesn't work
-- [ ] On file mode, the Journal icon is not colored even if there is items in it
+- [x] When changing buddy color in file mode, the icon become black
+- [x] On Electron, the Journal doesn't work
+- [x] On file mode, the Journal icon is not colored even if there is items in it
 - [x] Storage value in About my computer is null
 - [x] Fix --logoff and --init options in Electron
 - [x] On file mode/Electron, when trying to connect to a server url ending with a slash, the connection hangs
