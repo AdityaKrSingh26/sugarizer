@@ -1,6 +1,6 @@
 define(function () {
 	async function saveFileMobile({ filename, text, binary, mimetype }) {
-		const cordovaFileStorage = platform.ios
+		const cordovaFileStorage = sugarizer.constant.platform.ios
 			? cordova.file.documentsDirectory
 			: cordova.file.externalRootDirectory;
 
@@ -42,7 +42,7 @@ define(function () {
 	}
 
 	function openDocInAndroid(metadata, text) {
-		const cordovaFileStorage = enyo.platform.ios
+		const cordovaFileStorage = sugarizer.constant.platform.ios
 			? cordova.file.documentsDirectory
 			: cordova.file.externalCacheDirectory;
 
@@ -91,6 +91,25 @@ define(function () {
 		} else {
 			openDocInIOS(metadata, text);
 		}
+	}
+
+	function base64toBlob(mimetype, base64) {
+		var contentType = mimetype;
+		var byteCharacters = atob(
+			base64.substr(base64.indexOf(";base64,") + 8)
+		);
+		var byteArrays = [];
+		for (var offset = 0; offset < byteCharacters.length; offset += 1024) {
+			var slice = byteCharacters.slice(offset, offset + 1024);
+			var byteNumbers = new Array(slice.length);
+			for (var i = 0; i < slice.length; i++) {
+				byteNumbers[i] = slice.charCodeAt(i);
+			}
+			var byteArray = new Uint8Array(byteNumbers);
+			byteArrays.push(byteArray);
+		}
+		var blob = new Blob(byteArrays, { type: contentType });
+		return blob;
 	}
 
 	return { saveFileMobile, openDocInMobile };

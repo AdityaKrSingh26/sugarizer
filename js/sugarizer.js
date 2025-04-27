@@ -4,7 +4,7 @@ requirejs.config({
 	paths: {
 		activity: "../js",
 		modules: "../js/modules",
-		platform: "../js/modules/platform/",
+		platform: "../js/modules/platform",
 	}
 });
 
