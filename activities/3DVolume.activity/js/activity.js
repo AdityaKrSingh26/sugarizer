@@ -841,21 +841,17 @@ define([
 		}
 		function remove(intersectedObject, index) {
 			let num = 0;
-
-			//to ensure scores are updated before removal
-			if (world.hasActiveBodies === false && throwingDice) {
-				getScores();
-				throwingDice = false;
-			}
-
 			for (let i = 0; i < diceArray.length; i++) {
 				if (diceArray[i][3]) {
 					num++;
 				}
 			}
+			// Only subtract scores if dice are not currently moving
+			let shouldSubtractScore = !throwingDice && !awake;
+
 			// Find the volume being clicked within the diceArray to remove it.
 			if (intersectedObject == null) {
-				if (index < diceArray.length && diceArray[index][3]) {
+				if (index < diceArray.length && diceArray[index][3] && shouldSubtractScore) {
 					// If the volume being removed is a numbered volume then get the number on top of the volume and remove it from the score.
 					let score;
 					switch (diceArray[index][2]) {
@@ -931,7 +927,7 @@ define([
 			} else {
 				for (let i = 0; i < diceArray.length; i++) {
 					if (diceArray[i][0] == intersectedObject) {
-						if (diceArray[i][3]) {
+						if (diceArray[i][3] && shouldSubtractScore) {
 							// If the volume being removed is a numbered volume then get the number on top of the volume and remove it from the score.
 							let score;
 							switch (diceArray[i][2]) {
@@ -1473,7 +1469,6 @@ define([
 			if (diceArray.length > 0) {
 				scoresObject.lastRoll = "";
 				scoresObject.presentScore = 0;
-				updateElements();
 				for (let i = 0; i < diceArray.length; i++) {
 					diceArray[i][1].angularVelocity.set(
 						diceArray[i][7],
