@@ -841,124 +841,126 @@ define([
 		}
 		function remove(intersectedObject, index) {
 			let num = 0;
+		
 			for (let i = 0; i < diceArray.length; i++) {
-			  if (diceArray[i][3]) {
-				num++;
-			  }
+				if (diceArray[i][3]) {
+					num++;
+				}
 			}
+		
 			// Find the volume being clicked within the diceArray to remove it.
 			if (intersectedObject == null) {
-			  if (index < diceArray.length && diceArray[index][3]) {
-				// If the volume being removed is a numbered volume then get the number on top of the volume and remove it from the score.
-	  
-				let score;
-				switch (diceArray[index][2]) {
-				  case "cube":
-					score = getCubeScore(scoresObject, diceArray[index][0], true);
-					break;
-				  case "icosa":
-					score = getIcosaScore(scoresObject, diceArray[index][0], true);
-					break;
-				  case "deca":
-					score = getDecaScore(scoresObject, diceArray[index][0], true);
-					break;
-				  case "dodeca":
-					score = getDodecaScore(scoresObject, diceArray[index][0], true);
-					break;
-				  case "octa":
-					score = getOctaScore(scoresObject, diceArray[index][0], true);
-					break;
-				  case "tetra":
-					score = getTetraScore(scoresObject, diceArray[index][0], true);
-					break;
-				  default:
-					console.log(`Unknown type: ${diceArray[index][3]}`);
-				}
-	  
-				scoresObject.presentScore = scoresObject.presentScore - score;
-	  
-				let scoresArray = scoresObject.lastRoll.split(" + ");
-	  
-				// Find the index of the first occurrence of the score to remove
-				let indexToRemove = scoresArray.indexOf(score.toString());
-	  
-				// If the score is found, remove it
-				if (indexToRemove !== -1) {
-				  scoresArray.splice(indexToRemove, 1);
-				}
-	  
-				// Join the remaining scores back into a string
-				scoresObject.lastRoll = scoresArray.join(" + ");
-				updateElements();
-				num--;
-			  }
-			  if (diceArray.length != 0 && intersectedObject != null) {
-				world.removeBody(diceArray[index][1]);
-				scene.remove(diceArray[index][0]);
-				diceArray.splice(index, 1);
-			  }
-			} else {
-			  for (let i = 0; i < diceArray.length; i++) {
-				if (diceArray[i][0] == intersectedObject) {
-				  if (diceArray[i][3]) {
+				if (index < diceArray.length && diceArray[index][3]) {
 					// If the volume being removed is a numbered volume then get the number on top of the volume and remove it from the score.
-					let score = 0;  // initialised score to 0 to prevent undefined behaviour
-					if (diceArray[i][1].sleepState != 0) {
-						// checks the sleep status of the volume.
-					  switch (diceArray[i][2]) {
+		
+					let score;
+					switch (diceArray[index][2]) {
 						case "cube":
-						  score = getCubeScore(scoresObject, diceArray[i][0], true);
-						  break;
+							score = getCubeScore(scoresObject, diceArray[index][0], true);
+							break;
 						case "icosa":
-						  score = getIcosaScore(scoresObject, diceArray[i][0], true);
-						  break;
+							score = getIcosaScore(scoresObject, diceArray[index][0], true);
+							break;
 						case "deca":
-						  score = getDecaScore(scoresObject, diceArray[i][0], true);
-						  break;
+							score = getDecaScore(scoresObject, diceArray[index][0], true);
+							break;
 						case "dodeca":
-						  score = getDodecaScore(scoresObject, diceArray[i][0], true);
-						  break;
+							score = getDodecaScore(scoresObject, diceArray[index][0], true);
+							break;
 						case "octa":
-						  score = getOctaScore(scoresObject, diceArray[i][0], true);
-						  break;
+							score = getOctaScore(scoresObject, diceArray[index][0], true);
+							break;
 						case "tetra":
-						  score = getTetraScore(scoresObject, diceArray[i][0], true);
-						  break;
+							score = getTetraScore(scoresObject, diceArray[index][0], true);
+							break;
 						default:
-						  continue; // skip unknown types
-					  }
-	  
-					  scoresObject.presentScore = scoresObject.presentScore - score;
-	  
-					  let scoresArray = scoresObject.lastRoll.split(" + ");
-	  
-					  // Find the index of the first occurrence of the score to remove
-					  let indexToRemove = scoresArray.indexOf(score.toString());
-	  
-					  // If the score is found, remove it
-					  if (indexToRemove !== -1) {
-						scoresArray.splice(indexToRemove, 1);
-					  }
-	  
-					  // Join the remaining scores back into a string
-					  scoresObject.lastRoll = scoresArray.join(" + ");
-					  updateElements();
-					  num--;
+							console.log(`Unknown type: ${diceArray[index][3]}`);
 					}
-				  }
-				  world.removeBody(diceArray[i][1]);
-				  scene.remove(diceArray[i][0]);
-				  diceArray.splice(i, 1);
+		
+					scoresObject.presentScore = scoresObject.presentScore - score;
+		
+					let scoresArray = scoresObject.lastRoll.split(" + ");
+		
+					// Find the index of the first occurrence of the score to remove
+					let indexToRemove = scoresArray.indexOf(score.toString());
+		
+					// If the score is found, remove it
+					if (indexToRemove !== -1) {
+						scoresArray.splice(indexToRemove, 1);
+					}
+		
+					// Join the remaining scores back into a string
+					scoresObject.lastRoll = scoresArray.join(" + ");
+					updateElements();
+					num--;
 				}
-			  }
+				if (diceArray.length != 0 && intersectedObject != null) {
+					world.removeBody(diceArray[index][1]);
+					scene.remove(diceArray[index][0]);
+					diceArray.splice(index, 1);
+				}
+			} else {
+				for (let i = 0; i < diceArray.length; i++) {
+					if (diceArray[i][0] == intersectedObject) {
+						if (diceArray[i][3]) {
+							// If the volume being removed is a numbered volume then get the number on top of the volume and remove it from the score.
+							let score = 0; // initialised score to 0 to prevent undefined behaviour
+							if (diceArray[i][1].sleepState != 0) {
+								// checks the sleep status of the volume.
+								switch (diceArray[i][2]) {
+									case "cube":
+										score = getCubeScore(scoresObject, diceArray[i][0], true);
+										break;
+									case "icosa":
+										score = getIcosaScore(scoresObject, diceArray[i][0], true);
+										break;
+									case "deca":
+										score = getDecaScore(scoresObject, diceArray[i][0], true);
+										break;
+									case "dodeca":
+										score = getDodecaScore(scoresObject, diceArray[i][0], true);
+										break;
+									case "octa":
+										score = getOctaScore(scoresObject, diceArray[i][0], true);
+										break;
+									case "tetra":
+										score = getTetraScore(scoresObject, diceArray[i][0], true);
+										break;
+									default:
+										continue; // skip unknown types
+								}
+		
+								scoresObject.presentScore = scoresObject.presentScore - score;
+		
+								let scoresArray = scoresObject.lastRoll.split(" + ");
+		
+								// Find the index of the first occurrence of the score to remove
+								let indexToRemove = scoresArray.indexOf(score.toString());
+		
+								// If the score is found, remove it
+								if (indexToRemove !== -1) {
+									scoresArray.splice(indexToRemove, 1);
+								}
+		
+								// Join the remaining scores back into a string
+								scoresObject.lastRoll = scoresArray.join(" + ");
+								updateElements();
+								num--;
+							}
+						}
+						world.removeBody(diceArray[i][1]);
+						scene.remove(diceArray[i][0]);
+						diceArray.splice(i, 1);
+					}
+				}
 			}
 			if (num == 0) {
-			  lastRollElement.textContent = "";
-			  scoresObject.lastRoll = "";
-			  scoresObject.presentScore = 0;
+				lastRollElement.textContent = "";
+				scoresObject.lastRoll = "";
+				scoresObject.presentScore = 0;
 			}
 		}
-
+		
 		var presence = null;
 		var palette = new presencepalette.PresencePalette(
 			document.getElementById("network-button"),
