@@ -154,6 +154,9 @@ const LoginScreen = {
 		} else {
 			this.details.serverAddress = sugarizer.modules.server.getDefaultServerUrl();
 		}
+		if (sugarizer.constant.platform.android && sugarizer.getClientPlatform() === sugarizer.constant.mobileType) {
+			AndroidFullScreen.immersiveMode(function() {}, function() {});
+		}
 	},
 
 	watch: {
