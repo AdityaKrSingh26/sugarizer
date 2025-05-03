@@ -670,13 +670,23 @@ define([
 
 		// Adds all the numbers on top for the numbered volumes.
 		function updateElements() {
-			lastRollElement.textContent =
-				scoresObject.lastRoll.substring(
-					0,
-					scoresObject.lastRoll.length - 2
-				) +
-				"= " +
-				scoresObject.presentScore;
+			if (!scoresObject.lastRoll || scoresObject.lastRoll === "") {
+				lastRollElement.textContent = "";
+				return;
+			}
+			
+			let displayString = scoresObject.lastRoll;
+			// Trim trailing " + " if present
+			if (displayString.endsWith(" + ")) {
+				displayString = displayString.substring(0, displayString.length - 3);
+			}
+			
+			// Only show score if we have valid dice scores
+			if (displayString) {
+				lastRollElement.textContent = displayString + " = " + scoresObject.presentScore;
+			} else {
+				lastRollElement.textContent = "";
+			}
 		}
 
 		const renderer = new THREE.WebGLRenderer({
@@ -838,6 +848,20 @@ define([
 
 				remove(intersectedObject);
 			}
+		}
+		// Check if a die is not moving -> sleeping
+		function isDiceSleeping(dice) {
+			return dice[1].sleepState === CANNON.Body.SLEEPING;
+		}
+
+		// Check if we have any scored dice -> stationary numbered dice
+		function hasAnyScoredDice() {
+			for (let i = 0; i < diceArray.length; i++) {
+				if (diceArray[i][3] && isDiceSleeping(diceArray[i])) {
+					return true;
+				}
+			}
+			return false;
 		}
 		function remove(intersectedObject, index) {
 			let num = 0;
@@ -1004,7 +1028,8 @@ define([
 					}
 				}
 			}
-			if (num == 0) {
+			// Update display - hide score if no scored dice remain
+			if (num == 0 || !hasAnyScoredDice()) {
 				lastRollElement.textContent = "";
 				scoresObject.lastRoll = "";
 				scoresObject.presentScore = 0;
