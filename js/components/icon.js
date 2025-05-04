@@ -156,20 +156,40 @@ const Icon ={
 				parent.style.width = size+"px";
 				parent.style.height = size+"px";
 				svgElement.setAttribute("preserveAspectRatio", "xMidYMid meet");
-				await new Promise((resolve, reject) => {
-					const img = new Image();
-					img.onload = function() {
-						if (this.width != size) {
-							let intersectsize = this.width;
-							svgElement.setAttribute("viewBox", "0 0 " + intersectsize + " " + intersectsize);
-						} else {
-							svgElement.setAttribute("viewBox", "0 0 55 55");
-						}
-						resolve();
-					};
-					img.onerror = reject;
-					img.src = svgfile;
-				});
+				if (/(iPhone|iPad|iPod)/.test(navigator.userAgent) && document.location.protocol.substr(0,4) != "http") {
+					// HACK: Cordova iOS doesn't support SVG use, extract symbol content from SVG file
+					let txt = await this._loadIcon(svgfile);
+					let width = txt.match(/<svg[^>]*width="([^"]*)"/);
+					if (width && width.length > 1) {
+						width[1] = width[1].replace("px","");
+					}
+					let symbol = txt.match(/<symbol[^>]*>([\s\S]*)<\/symbol>/);
+					if (symbol && symbol.length > 1) {
+						txt = symbol[1];
+					}
+					if (width && width.length > 1) {
+						width = width[1];
+						svgElement.setAttribute("viewBox", "0 0 " + width + " " + width);
+					} else {
+						svgElement.setAttribute("viewBox", "0 0 55 55");
+					}
+					svgElement.innerHTML = txt;
+				} else {
+					await new Promise((resolve, reject) => {
+						const img = new Image();
+						img.onload = function() {
+							if (this.width != size) {
+								let intersectsize = this.width;
+								svgElement.setAttribute("viewBox", "0 0 " + intersectsize + " " + intersectsize);
+							} else {
+								svgElement.setAttribute("viewBox", "0 0 55 55");
+							}
+							resolve();
+						};
+						img.onerror = reject;
+						img.src = svgfile;
+					});
+				}
 			}
 
 			var useElement = document.createElementNS(svgElement.namespaceURI,"use");
