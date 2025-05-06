@@ -46,6 +46,7 @@ const HomeScreen = {
 							<transition name="bounce" appear>
 								<icon
 									id="journal-btn"
+									:color="journalcolor"
 									:ref="'journalIcon'"
 									svgfile="./icons/activity-journal.svg"
 									class="home-icon"
@@ -114,6 +115,7 @@ const HomeScreen = {
 			popup: null, // singular popup data
 			username: null,
 			buddycolor: null,
+			journalcolor: undefined,
 			canvasCenter: {},
 			restrictedModeInfo: { start: 0 },
 			spiralPositions: [],
@@ -198,7 +200,7 @@ const HomeScreen = {
 		async getJournal() {
 			await sugarizer.modules.journal.load();
 			if (sugarizer.modules.journal.get().length > 0) {
-				this.$refs["journalIcon"].colorData = this.buddycolor;
+				this.journalcolor = this.buddycolor;
 			}
 		},
 
