@@ -16,6 +16,7 @@ const LoginScreen = {
 			 :y="0"
 			 :color="256"
 			 isNative="true"
+			 @click="startTutorial"
 		 ></icon>
 	</div>
 	<form>
@@ -23,12 +24,12 @@ const LoginScreen = {
 			<div class="firstscreen_text" id="serverurl">{{$t('ServerUrl')}}</div>
 			<div @click="unlockServerAddress">
 				<div ref="serverOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;"></div>
-				<input ref="serverAddress" disabled="true" name="server" type="text" class="input_field locked_field" v-model="details.serverAddress" @keyup="handleEnterKey">
+				<input ref="serverAddress" disabled="true" name="server" id="serverbox" type="text" class="input_field locked_field" v-model="details.serverAddress" @keyup="handleEnterKey">
 			</div>
 		</div>
 		<div id="loginscreen_name" class="column" v-show="index.currentIndex === 1">
 			<div class="firstscreen_text" id="name">{{$t('Name')}}</div>
-			<input ref="nameInput" type="text" name="name" class="input_field" v-model="details.name" @keyup="handleEnterKey">
+			<input ref="nameInput" type="text" name="name" id="namebox" class="input_field" v-model="details.name" @keyup="handleEnterKey">
 		</div>
 		<div id="loginscreen_password" class="column" v-show="index.currentIndex === 2">
 			<div ref="pwdText" class="firstscreen_text" id="pass_text" v-html="$t('Password')"></div>
@@ -76,7 +77,7 @@ const LoginScreen = {
 </div>
 <div class="loginscreen_buttons">
 	<br>
-	<div class="ls_left_btn">
+	<div class="ls_left_btn" id="previous">
 		<icon-button
 			 id="back-btn"
 			 svgfile="./icons/go-left.svg"
@@ -85,11 +86,11 @@ const LoginScreen = {
 			 :color="1024"
 			 :x="0"
 			 :y="0"
-			 :text="$t('Back')"
-			 @click="prevItem"
+			 :text="index.currentIndex !== 4 ? $t('Back') : $t('Decline')"
+  			 @click="index.currentIndex === 4 ? reset() : prevItem()"
 			></icon-button>
 	</div>
-	<div class="ls_right_btn">
+	<div class="ls_right_btn" id="next">
 		<icon-button
 			id="next-btn"
 			svgfile="./icons/go-right.svg"
@@ -98,7 +99,7 @@ const LoginScreen = {
 			color="1024"
 			x="0"
 			y="0"
-			:text="index.currentIndex === index.maxIndex ? $t('Done'): $t('Next')"
+			:text="index.currentIndex === 4 ? $t('Accept') : (index.currentIndex === index.maxIndex ? $t('Done') : $t('Next'))"
 			type="submit"
 			@click="index.currentIndex === index.maxIndex ? makeLoginRequest() : nextItem()"
 		></icon-button>
@@ -157,6 +158,7 @@ const LoginScreen = {
 		if (sugarizer.constant.platform.android && sugarizer.getClientPlatform() === sugarizer.constant.mobileType) {
 			AndroidFullScreen.immersiveMode(function() {}, function() {});
 		}
+		this.tutorialSteps
 	},
 
 	watch: {
@@ -370,6 +372,12 @@ const LoginScreen = {
 				this.login(this.details.serverAddress, this.details.name, this.details.password);
 			}
 			this.isLoading = false;
+		},
+		startTutorial() {
+			sugarizer.modules.tutorial.startTutorial(sugarizer.constant.authscreen, {index: this.index.currentIndex, createMode: !this.userType.isLogin});
+		},
+		reset() {
+			this.index.currentIndex = 0;
 		}
 	},
 };

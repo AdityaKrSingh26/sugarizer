@@ -765,12 +765,9 @@ a {
 	background-color: #282828;
 	-webkit-user-select: none;
 	-moz-user-select: none;
-	position: sticky;
-	top: 0px;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	z-index: 1;
 }
 
 .tool_rightitems {
@@ -1001,20 +998,21 @@ a {
 }
 
 .loginscreen_buttons {
-	position: fixed;
-	bottom: 50px;
 	width: 100%;
 	display: flex;
 	justify-content: space-between;
 }
 
 .ls_left_btn {
-	margin-left: 50px;
+	position: fixed;
+	bottom: 50px;
+	left: 50px;
 }
 
 .ls_right_btn {
-	margin-right: 50px;
-	margin-left: auto;
+	position: fixed;
+	bottom: 50px;
+	right: 50px;
 }
 
 .ls_icon_btn {
@@ -1040,16 +1038,24 @@ a {
 	top: -15vh;
 }
 
-.loginscreen_help, .firstscreen_help {
+.loginscreen_help #help-icon, .firstscreen_help #help-icon {
 	position: fixed;
 	top: 60px;
 	left: 10%;
-	width: 80%;
+	width: min-content;
 	margin-inline: auto;
  }
 .firstscreen_help {
 	display: flex;
 	justify-content: space-between;
+}
+.firstscreen_help #stop-icon {
+	position: fixed;
+	top: 60px;
+	right: 10%;
+}
+#login-icon.introjs-showElement, #newuser-icon.introjs-showElement, #stop-icon.introjs-showElement {
+	filter: brightness(.5);
 }
 
 /* listview */

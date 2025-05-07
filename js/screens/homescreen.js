@@ -5,7 +5,7 @@
 
 const HomeScreen = {
 	name: 'HomeScreen',
-	template: ` <div class="homescreen" ref="homescreen">
+	template: ` <div class="homescreen" id="homescreen" ref="homescreen">
 							<transition-group name="fade">
 								<div v-for="(activity, index) in restrictedModeInfo.activities || activities" :key="activity.id">
 									<div
@@ -105,7 +105,7 @@ const HomeScreen = {
 		prompt: Prompt,
 	},
 
-	emits: ['openSettings', 'openJournal', 'setAssignmentCount'],
+	emits: ['openSettings', 'openJournal'],
 
 	data() {
 		return {
@@ -165,7 +165,6 @@ const HomeScreen = {
 		
 		this.draw();
 		this.filterSearch(this.filter);
-		this.setAssignmentCount();
 	},
 
 	beforeUnmount() {
@@ -191,28 +190,16 @@ const HomeScreen = {
 				await this.$refs.buddyIcon.wait();
 				this.buddycolor = user.color;
 
-				await this.getJournal();
+				this.setJournal();
 			} catch (error) {
 				throw new Error('Unable to load the user, error ' + error);
 			}
 		},
 
-		async getJournal() {
-			await sugarizer.modules.journal.load();
+		setJournal() {
 			if (sugarizer.modules.journal.get().length > 0) {
 				this.journalcolor = this.buddycolor;
 			}
-		},
-
-		setAssignmentCount() {
-			const entries = sugarizer.modules.journal.get();
-			let count = 0;
-			entries.forEach((entry) => {
-				if (entry.metadata.assignmentId && entry.metadata.isSubmitted == false && entry.metadata.dueDate > new Date().getTime()) {
-					count += 1;
-				}
-			});
-			this.$emit("setAssignmentCount", count);
 		},
 
 		filterFavorite(activities) {

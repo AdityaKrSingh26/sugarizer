@@ -5,6 +5,7 @@ const MainScreen = {
 	template: `<div class="toolbar" v-show="screentype !== 'journal' && screentype !== null">
 					<div class="tool_leftitems">
 						<searchfield
+							id="searchfield"
 							ref="searchfield"
 							v-on:input-changed="searchFunction"
 							:placeholder="screentype==='neighborhood' ? $t('SearchNeighbor') : $t('SearchHome')"
@@ -19,9 +20,11 @@ const MainScreen = {
 							:color="768"
 							:title="$t('Tutorial')"
 							isNative="true"
+							@click="startTutorial"
 						></icon>
 						<div v-if="assignmentCount > 0" id="toolbar-assignment-btn">
 							<icon
+								id="assignment-icon"
 								class="toolbutton"
 								svgfile="./icons/assignment.svg"
 								isNative="true"
@@ -95,7 +98,7 @@ const MainScreen = {
 					<div id="canvas" ref="canvas" class="sugarizer-desktop">
 						<settings ref="settings" :buddycolor=buddycolor :username="username"></settings>
 						<listview v-if="screentype==='list'" :filter="filter" @clear-searchfield = "clearSearchField"/>
-						<homescreen ref="home" @set-assignment-count="setAssignmentCount" @open-journal="changeView('journal')" @open-settings="displaySettings" v-else-if="screentype==='home'" :filter="filter" />
+						<homescreen ref="home" @open-journal="changeView('journal')" @open-settings="displaySettings" v-else-if="screentype==='home'" :filter="filter" />
 						<neighborhood @open-settings="displayServerSettings" v-else-if="screentype==='neighborhood'" :filter="filter" />
 						<journal :isAssignmentSelected="isAssignmentSelected" @close-journal="changeView('home')" v-else-if="screentype==='journal'"/>
 					</div>
@@ -125,6 +128,12 @@ const MainScreen = {
 
 	created: async function () {
 		let vm = this;
+		tutorialMap = {
+			'home': sugarizer.constant.homeview,
+			'list': sugarizer.constant.listview,
+			'neighborhood': sugarizer.constant.neighborhood,
+		};
+
 		this.connectToServer();
 		window.addEventListener('synchronization', (e) => {
 			if (e.detail.step === 'compute') {
@@ -139,8 +148,12 @@ const MainScreen = {
 		});
 		vm.offline = !sugarizer.modules.user.isConnected();
 
-		await sugarizer.modules.journal.synchronize();
-		await this.initializeActivities();
+		await Promise.all([
+			sugarizer.modules.journal.load(),
+			sugarizer.modules.journal.synchronize(),
+			this.initializeActivities()
+		]);
+		this.setAssignmentCount();
 		this.initView();
 	},
 
@@ -151,6 +164,17 @@ const MainScreen = {
 			} catch (error) {
 				throw new Error('Unable to load the activities, error ' + error);
 			}
+		},
+
+		setAssignmentCount() {
+			const entries = sugarizer.modules.journal.get();
+			let count = 0;
+			entries.forEach((entry) => {
+				if (entry.metadata.assignmentId && entry.metadata.isSubmitted == false && entry.metadata.dueDate > new Date().getTime()) {
+					count += 1;
+				}
+			});
+			this.assignmentCount = count;
 		},
 
 		initView() {
@@ -196,9 +220,6 @@ const MainScreen = {
 			this.changeView("journal");
 			this.$nextTick(() => this.isAssignmentSelected = false)
 		},
-		setAssignmentCount(count) {
-			this.assignmentCount = count;
-		},
 
 		searchFunction(searchInput) {
 			sugarizer.modules.stats.trace(this.screentype+'_view', 'search', 'q='+searchInput, null);
@@ -215,6 +236,12 @@ const MainScreen = {
 		clearSearchField() {
 			this.$refs.searchfield.searchQuery = '';
 		},
+
+		startTutorial() {
+			const tutorialType = tutorialMap[this.screentype];
+			if (!tutorialType) return;
+			sugarizer.modules.tutorial.startTutorial(tutorialType);
+		}
 	},
 };
 
