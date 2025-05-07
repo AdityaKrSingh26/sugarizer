@@ -208,6 +208,7 @@ const LoginScreen = {
 				if (this.userType.isPrevUser.url == '' && sugarizer.getClientType() === sugarizer.constant.appType) {
 					this.details.color = this.userType.isPrevUser.color;
 					sugarizer.modules.user.signup(this.userType.isPrevUser.url, this.userType.isPrevUser.name, '', sugarizer.modules.xocolor.get(this.details.color)).then((user) => {
+						window.isNewUser = true;
 						this.login(this.userType.isPrevUser.url, this.userType.isPrevUser.name, '');
 					}, (error) => {
 						console.log(error);
@@ -352,6 +353,7 @@ const LoginScreen = {
 
 				this.details.password = this.$refs.passwordInput.passwordText;
 				await sugarizer.modules.user.signup(this.details.serverAddress, this.details.name, this.details.password, sugarizer.modules.xocolor.get(colorNumber)).then((user) => {
+					window.isNewUser = true;
 					this.login(this.details.serverAddress, this.details.name, this.details.password);
 				}, (error) => {
 					console.log(error);

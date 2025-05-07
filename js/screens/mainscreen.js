@@ -128,7 +128,7 @@ const MainScreen = {
 
 	created: async function () {
 		let vm = this;
-		tutorialMap = {
+		this.tutorialMap = {
 			'home': sugarizer.constant.homeview,
 			'list': sugarizer.constant.listview,
 			'neighborhood': sugarizer.constant.neighborhood,
@@ -188,6 +188,10 @@ const MainScreen = {
 			} else {
 				this.screentype = this.views[view];
 			}
+			if (sugarizer.modules.history.get().length <= 1 && window.isNewUser) {
+				window.isNewUser = undefined;
+				this.startTutorial();
+			}
 		},
 
 		connectToServer() {
@@ -238,7 +242,7 @@ const MainScreen = {
 		},
 
 		startTutorial() {
-			const tutorialType = tutorialMap[this.screentype];
+			const tutorialType = this.tutorialMap[this.screentype];
 			if (!tutorialType) return;
 			sugarizer.modules.tutorial.startTutorial(tutorialType);
 		}

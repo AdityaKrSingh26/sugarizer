@@ -486,7 +486,6 @@ define(function () {
     };
 
     const viewTutSteps = await views[viewName](viewOptions);
-    console.log(viewTutSteps);
 
     if (!viewTutSteps) {
       console.error("Tutorial not found for view: " + viewName);

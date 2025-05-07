@@ -121,6 +121,7 @@ const FirstScreen = {
 			} catch (error) {
 				this.prevUsers = [];
 			}
+			if (this.prevUsers.length === 0) this.startTutorial()
 		},
 
 		loadLoginScreen(buttontype, index) {
