@@ -107,8 +107,8 @@ define(["platform/handler"], function (platform) {
 	};
 
 	// Open the content as a document in a new Window
-	file.openAsDocument = function (metadata, text) {
-		platform.openAsDocument(metadata, text);
+	file.openAsDocument = function (metadata, text, objectId) {
+		platform.openAsDocument(metadata, text, objectId);
 	};
 
 	return file;

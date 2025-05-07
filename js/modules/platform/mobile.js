@@ -72,24 +72,20 @@ define(function () {
 			}
 		);
 	}
-	function openDocInIOS(metadata, text) {
-		const blob = base64toBlob(metadata.mimetype, text);
-		const blobUrl = URL.createObjectURL(blob);
-		cordova.InAppBrowser.open(
-			blobUrl,
-			"_blank",
-			"location=no,closebuttoncaption=" + l10n.get("Ok")
-		);
+	function openDocInIOS(metadata, text, objectId) {
+		// On iOS save in localStorage and display it as blob object in Open InApp window
+		window.localStorage.setItem("sugar_inappbrowser_objectId", objectId);
+		cordova.InAppBrowser.open("inapp.html", '_blank', 'location=no,closebuttoncaption='+sugarizer.modules.i18next.t("Ok"));
 	}
 
-	function openDocInMobile(metadata, text) {
+	function openDocInMobile(metadata, text, objectId) {
 		if (
 			sugarizer.constant.platform.android ||
 			sugarizer.constant.platform.androidChrome
 		) {
 			openDocInAndroid(metadata, text);
 		} else {
-			openDocInIOS(metadata, text);
+			openDocInIOS(metadata, text, objectId);
 		}
 	}
 
