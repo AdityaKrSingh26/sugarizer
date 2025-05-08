@@ -498,9 +498,9 @@ define(function () {
     const intro = introJs();
     intro.setOptions({
       steps: filteredSteps,
-      nextLabel: i18next.t("Next"),
-      prevLabel: i18next.t("Previous"),
-      doneLabel: i18next.t("Done"),
+      nextLabel: i18next.t("TutoNext"),
+      prevLabel: i18next.t("TutoPrev"),
+      doneLabel: i18next.t("TutoEnd"),
       tooltipClass: "customTooltip",
       showBullets: false,
       exitOnOverlayClick: false,
