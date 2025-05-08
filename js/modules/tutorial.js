@@ -1,4 +1,5 @@
 define(function () {
+  let tutorial = {};
   let i18next;
   let constant = {
     iconsPath: "./icons/",
@@ -80,6 +81,7 @@ define(function () {
 				disableHoverEffect=true
 			></icon>
 		`);
+      tutorial.activityId = "org.olpcfrance.sharednotes";
 
       return [
         {
@@ -469,7 +471,7 @@ define(function () {
     },
   };
 
-  const startTutorial = async function (viewName, viewOptions) {
+  tutorial.startTutorial = async function (viewName, viewOptions) {
     i18next = sugarizer.modules.i18next;
     previous = {
       element: getElement("previous"),
@@ -485,6 +487,7 @@ define(function () {
       intro: i18next.t("TutoInitNextContent"),
     };
 
+    tutorial.activityId = null;
     const viewTutSteps = await views[viewName](viewOptions);
 
     if (!viewTutSteps) {
@@ -513,5 +516,5 @@ define(function () {
     return intro;
   };
 
-  return { startTutorial };
+  return tutorial;
 });

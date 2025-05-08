@@ -225,7 +225,8 @@ const HomeScreen = {
 				name = entries[i].metadata.title;
 				break;
 			}
-			sugarizer.modules.activities.runActivity(activity, objectId, name);
+			const help = activity.id === sugarizer.modules.tutorial.activityId;
+			sugarizer.modules.activities.runActivity(activity, objectId, name, undefined, help);
 		},
 
 		launchActivity(activity, item) {
