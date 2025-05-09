@@ -180,6 +180,33 @@ define(function () {
       ];
     },
 
+    [sugarizer.constant.activities]: async function ({ activities }) {
+      const buddycolor = sugarizer.modules.settings.getUser().color;
+      const stepPromises = activities.map(async (activity) => {
+        const iconHTML = await renderIconToHTML(`
+            <icon 
+                svgfile="${activity.directory + "/" + activity.icon}"
+				:color="${buddycolor}"
+                disableHoverEffect=true
+				isNative=true
+            ></icon>
+        `);
+
+        return {
+          title: i18next.t("NameActivity", { name: activity.name }),
+          intro:
+            iconHTML +
+            i18next.t(
+              `TutoActivity${activity.directory.match(
+                /activities\/([^.]+)/
+              )[1]}activity`
+            ),
+        };
+      });
+
+      return Promise.all(stepPromises);
+    },
+
     [sugarizer.constant.journal]: async function () {
       return [
         {
@@ -471,7 +498,7 @@ define(function () {
     },
   };
 
-  tutorial.startTutorial = async function (viewName, viewOptions) {
+  tutorial.startTutorial = async function (viewName, viewOptions = {}) {
     i18next = sugarizer.modules.i18next;
     previous = {
       element: getElement("previous"),
@@ -511,7 +538,12 @@ define(function () {
       disableInteraction: true,
     });
 
-    intro.start();
+    const index = viewOptions.startFromIndex;
+    if (index !== undefined && index > 0) {
+      intro.goToStepNumber(index + 1).start();
+    } else {
+      intro.start();
+    }
 
     return intro;
   };

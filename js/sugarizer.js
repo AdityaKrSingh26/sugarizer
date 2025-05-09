@@ -37,13 +37,14 @@ let sugarizer = {
 			androidChrome: /Android .* Chrome\/(\d+)[.\d]+/.test(navigator.userAgent)
 		},
 		timerBeforeClose: 1000,
-		// VIEWS
+		// Tutorial Types
 		firstscreen: "first",
 		authscreen: "auth",
 		homeview: "home",
 		listview: "list",
 		journal: "journal",
 		neighborhood: "neigh",
+		activities: "activities"
 	},
 
 	// Init function
