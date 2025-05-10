@@ -17,7 +17,7 @@ const Neighborhood = {
 					:x="entity.x"
 					:y="entity.y"
 					:isNative="entity.isNative" 
-					class="network-icon"
+					class="network-icon user-icon"
 					@mouseover="showPopupTimer($event, 'u-'+entity.networkId, entity.popupData)"
 					@mouseleave="removePopupTimer"
 				></icon>
@@ -32,7 +32,7 @@ const Neighborhood = {
 					:x="activity.x"
 					:y="activity.y"
 					isNative="true"
-					class="network-icon"
+					class="network-icon activity-icon"
 					@click="joinActivity(activity.activityInfo, activity.id)"
 					@mouseover="showPopupTimer($event, activity.id, activity.popupData)"
 					@mouseleave="removePopupTimer"
@@ -48,7 +48,7 @@ const Neighborhood = {
 						:size="constant.sizeNeighbor"
 						:x="user.x"
 						:y="user.y"
-						class="network-icon"
+						class="network-icon user-icon"
 						@mouseover="showPopupTimer($event, user.networkId, user.popupData)"
 						@mouseleave="removePopupTimer"
 					></icon>

@@ -8,7 +8,7 @@ const Password ={
 	template: `<div class="password-class">
 				<div class="password-line">
 					<div class="password-label"></div>
-					<div class="password-input">
+					<div class="password-input" id="passbox">
 						<input 
 							class="password-value" id="text" ref="password"
 							v-on:keydown="keyEntered" name="password"

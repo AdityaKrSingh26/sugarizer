@@ -33,7 +33,8 @@ const Icon ={
 		y: Number,
 		isNative: String,
 		disabled: Boolean,
-		disableHoverEffect: Boolean
+		disableHoverEffect: Boolean,
+		parent: Object
 	},
 	data() {
 		return {
@@ -143,7 +144,7 @@ const Icon ={
 		async _createIcon(svgfile, color, size) {
 			if(!svgfile)
 				return null;
-			var parent =document.getElementById(this.id);
+			var parent =document.getElementById(this.id) || this.parent;
 			if (!parent) {
 				return null;
 			}
