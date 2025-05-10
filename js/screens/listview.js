@@ -5,7 +5,7 @@
 const ListView = {
 	name: 'ListView',
 	template: `<transition-group name="fade" appear>
-					<div class="listview" v-for="activity in sortByName(activities)" :key="activity.id">
+					<div class="listview" v-for="(activity, index) in sortedActivities" :key="activity.id">
 						<div class="listview_left" >
 							<icon
 								:ref="'star' + activity.id"
@@ -40,6 +40,7 @@ const ListView = {
 							:color="256"
 							:size="44"
 							isNative="true"
+							@click="startActivitiesTutorial(index)"
 						></icon>
 					</div>
 				</transition-group>
@@ -100,6 +101,12 @@ const ListView = {
 
 	mounted() {
 		this.getUser();
+	},
+
+	computed: {
+		sortedActivities() {
+			return this.sortByName(this.activities);
+		}
 	},
 
 	watch: {
@@ -264,5 +271,11 @@ const ListView = {
 		clearSearchField() {
 			this.$emit('clear-searchfield'); 
 		},
+		startActivitiesTutorial(startFromIndex) {
+			sugarizer.modules.tutorial.startTutorial(sugarizer.constant.activities, {
+				activities: this.sortedActivities,
+				startFromIndex,
+			});
+		}
 	},
 };

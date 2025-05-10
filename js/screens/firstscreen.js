@@ -15,6 +15,7 @@ const FirstScreen = {
 									:y="0"
 									:color="256"
 									isNative="true"
+									@click="startTutorial"
 								></icon>
 								<icon
 									id="stop-icon"
@@ -64,11 +65,12 @@ const FirstScreen = {
                                 <div class="firstscreen_text" id="login_text">{{$t('Login')}}</div>
                             </div>                        
                         </div>
-                        <div class="previoususer">
+                        <div class="previoususers">
                             <div class="column" v-for="(user, index) in prevUsers">
                                 <icon-button
                                     :text="user.name"
                                     :id="'previoususer-' + index"
+                                    class="previoususer"
                                     svgfile="./icons/owner-icon.svg"
                                     :color="user.color.toString()"
                                     :size="28"
@@ -119,6 +121,7 @@ const FirstScreen = {
 			} catch (error) {
 				this.prevUsers = [];
 			}
+			if (this.prevUsers.length === 0) this.startTutorial()
 		},
 
 		loadLoginScreen(buttontype, index) {
@@ -164,6 +167,9 @@ const FirstScreen = {
 		},
 		quitApp() {
 			sugarizer.quitApp();
+		},
+		startTutorial() {
+			sugarizer.modules.tutorial.startTutorial(sugarizer.constant.firstscreen);
 		}
 	}
 }

@@ -13,10 +13,12 @@ let sugarizer = {
 	modules: {},
 
 	constant: {
+		// APP TYPES
 		webAppType: 0,
 		appType: 1,
 		mobileType: 2,
 		desktopAppType: 3,
+
 		sugarizerVersion: '2.0.0',
 		noServerMode: false,
 		defaultServerUrl: "https://server.sugarizer.org",
@@ -35,6 +37,14 @@ let sugarizer = {
 			androidChrome: /Android .* Chrome\/(\d+)[.\d]+/.test(navigator.userAgent)
 		},
 		timerBeforeClose: 1000,
+		// Tutorial Types
+		firstscreen: "first",
+		authscreen: "auth",
+		homeview: "home",
+		listview: "list",
+		journal: "journal",
+		neighborhood: "neigh",
+		activities: "activities"
 	},
 
 	// Init function
@@ -42,8 +52,9 @@ let sugarizer = {
 		return new Promise(function(resolve, reject) {
 			// Load modules
 			requirejs(
-				["modules/xocolor", "modules/contributors", "modules/server","modules/settings","modules/activities", "modules/journal", "modules/file", "modules/user", "modules/history", "modules/stats", 'modules/i18next', "lib/humane.js", "lib/sugar-web/presence.js"],
-				function(xocolor, contributors, server, settings, activities, journal, file, user, history, stats, i18next, humane, presence) {
+				//For modules don't add ".js" at the end
+				["modules/xocolor", "modules/contributors", "modules/server","modules/settings","modules/activities", "modules/journal", "modules/file", "modules/user", "modules/history", "modules/stats", "modules/i18next", "modules/tutorial", "lib/humane.js", "lib/sugar-web/presence.js"],
+				function(xocolor, contributors, server, settings, activities, journal, file, user, history, stats, i18next, tutorial, humane, presence) {
 					sugarizer.modules.xocolor = xocolor;
 					sugarizer.modules.contributors = contributors;
 					sugarizer.modules.server = server;
@@ -57,6 +68,7 @@ let sugarizer = {
 					sugarizer.modules.i18next = i18next;
 					sugarizer.modules.presence = presence;
 					sugarizer.modules.file = file;
+					sugarizer.modules.tutorial = tutorial;
 					i18next.init().then(resolve);
 				}
 			);

@@ -39,6 +39,7 @@ const Journal = {
 				></filter-box>
 				<filter-box 
 					ref="datepalette"
+					id="datepalette"
 					name="datepalette"
 					:options="datePalette"
 					@filter-selected="dateFilterSelected"
@@ -46,6 +47,7 @@ const Journal = {
 				></filter-box>
 				<filter-box 
 					ref="sortpalette"
+					id="sortpalette"
 					name="sortpalette"
 					:options="sortPalette"
 					@filter-selected="sortSelected"
@@ -71,12 +73,13 @@ const Journal = {
 					:color="768"
 					:title="$t('Tutorial')"
 					isNative="true"
+					@click="startTutorial"
 				></icon>
 			</div>
 			<div class="tool_rightitems">
 				<icon
 					class="toolbutton"
-					id="view_home_button"
+					id="journal_home_button"
 					svgfile="./icons/view-radial.svg" 
 					isNative="true"
 					:size="47"
@@ -161,6 +164,7 @@ const Journal = {
 					></icon>
 					<icon 
 						:id=entry.objectId
+						class="activity-icon"
 						:ref=entry.objectId
 						:svgfile="entry.activityIcon"
 						:size="constant.iconSizeList"
@@ -174,6 +178,7 @@ const Journal = {
 					<div class="assignment-container" v-if=entry.metadata.assignmentId>
 						<icon
 							:id="'assgn-'+idx"
+							class="assgn-icon"
 							svgfile="icons/assignment.svg"
 							:color="buddycolor"
 							:size="constant.iconSizeList"
@@ -183,6 +188,7 @@ const Journal = {
 							<icon
 								:id="'assgn-inst-'+idx"
 								:ref="'assgn-inst-'+idx"
+								class="assgn-inst"
 								v-if="entry.metadata.instructions"
 								svgfile="icons/instructions-icon.svg"
 								:size="constant.iconSizeList"
@@ -194,6 +200,7 @@ const Journal = {
 						<div style="width: 40px">
 							<icon
 								:id="'assgn-submit-'+idx"
+								class="assgn-submit"
 								v-if="entry.assignmentData.isSubmittable"
 								svgfile="icons/submit-assignment.svg"
 								:size="constant.iconSizeList"
@@ -204,7 +211,7 @@ const Journal = {
 						<h3 v-if="entry.assignmentData.dueDateText">{{ entry.assignmentData.dueDateText }}</h3>
 					</div>
 				</div>
-				<span>{{ this.selectedSortFilter === "textsize" ? entry.metadata.formattedSize : this.selectedSortFilter == "timestamp" ? entry.metadata.timestampString : entry.metadata.creationTimeString }}</span>
+				<span id="timeitem">{{ this.selectedSortFilter === "textsize" ? entry.metadata.formattedSize : this.selectedSortFilter == "timestamp" ? entry.metadata.timestampString : entry.metadata.creationTimeString }}</span>
 			</div>
 			</transition-group>
 			<div v-if="processedJournal && processedJournal.length === 0" class="no-matching-activities">
@@ -1225,5 +1232,8 @@ const Journal = {
 		trace(action, content, id = null) {
 			sugarizer.modules.stats.trace("journal", action, content, id);
 		},
+		startTutorial() {
+			sugarizer.modules.tutorial.startTutorial(sugarizer.constant.journal);
+		}
 	},
 };
