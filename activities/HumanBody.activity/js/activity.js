@@ -55,77 +55,126 @@ define([
 				});
 			});
 
+		// Store the environment
+        let currentenv;
 		env.getEnvironment(function (err, environment) {
-			currentenv = environment;
-			username = environment.user.name;
+            currentenv = environment;
+            username = environment.user.name;
 
-			// Load from datastore
-			// Load from datastore
-			if (!environment.objectId) {
-				console.log("New instance");
-			} else {
-				activity
-					.getDatastoreObject()
-					.loadAsText(function (error, metadata, data) {
-						if (error == null && data != null) {
-							partsColored = JSON.parse(data);
-							loader.load(
-								"models/skeleton/skeleton.gltf",
-								function (gltf) {
-									skeleton = gltf.scene;
-									skeleton.name = "skeleton";
+            // Load from datastore
+            if (!environment.objectId) {
+                console.log("New instance");
+                loadModel({
+					modelPath: "models/skeleton/skeleton.gltf",
+					name: "skeleton",
+					position: { x: 0, y: -5, z: 0 },
+					scale: { x: 4, y: 4, z: 4 }
+				});
+            } else {
+                activity
+                    .getDatastoreObject()
+                    .loadAsText(function (error, metadata, data) {
+                        if (error == null && data != null) {
+                            partsColored = JSON.parse(data);
+                            loadModel({
+								modelPath: "models/skeleton/skeleton.gltf",
+								name: "skeleton",
+								position: { x: 0, y: -5, z: 0 },
+								scale: { x: 4, y: 4, z: 4 }
+							});
+                        }
+                    });
+            }
 
-									skeleton.traverse((node) => {
-										if (node.isMesh) {
-											node.userData.originalMaterial =
-												node.material.clone(); // Save the original material
+            fillColor = environment.user.colorvalue.fill || fillColor;
 
-											// Check if the node's name exists in partsColored array
-											const part = partsColored.find(
-												([name, color]) =>
-													name === node.name
-											);
+            document.getElementById("color-button-fill").style.backgroundColor =
+                fillColor;
 
-											if (part) {
-												const [name, color] = part;
+            if (environment.sharedId) {
+                console.log("Shared instance");
+                presence = activity.getPresenceObject(function (
+                    error,
+                    network
+                ) {
+                    network.onDataReceived(onNetworkDataReceived);
+                });
+            }
+        });
 
-												// Apply the color from the array
-												node.material =
-													new THREE.MeshStandardMaterial(
-														{
-															color: new THREE.Color(
-																color
-															),
-															side: THREE.DoubleSide,
-														}
-													);
-											}
+		// General function to load models, can be reused for different models
+		function loadModel(options) {
+			const {
+				modelPath,
+				name,
+				position = { x: 0, y: 0, z: 0 },
+				scale = { x: 1, y: 1, z: 1 },
+				color = null,
+				callback = null
+			} = options;
 
-											console.log(node.name);
-										}
+			loader.load(
+				modelPath,
+				function (gltf) {
+					const model = gltf.scene;
+					model.name = name;
+
+					// Apply position
+					model.position.set(position.x, position.y, position.z);
+
+					// Apply scale
+					model.scale.set(scale.x, scale.y, scale.z);
+
+					// Apply color if specified
+					if (color) {
+						model.traverse((node) => {
+							if (node.isMesh) {
+								node.userData.originalMaterial = node.material.clone();
+								node.material = new THREE.MeshStandardMaterial({
+									color: new THREE.Color(color),
+									side: THREE.DoubleSide,
+								});
+							}
+						});
+					}
+
+					// For skeleton specific handling
+					if (name === "skeleton") {
+						model.traverse((node) => {
+							if (node.isMesh) {
+								node.userData.originalMaterial = node.material.clone();
+								
+								// Check if the node's name exists in partsColored array
+								const part = partsColored.find(
+									([partName, partColor]) => partName === node.name
+								);
+
+								if (part) {
+									const [, partColor] = part;
+									node.material = new THREE.MeshStandardMaterial({
+										color: new THREE.Color(partColor),
+										side: THREE.DoubleSide,
 									});
-
-									skeleton.scale.set(4, 4, 4);
-									skeleton.position.y += -5;
-									scene.add(skeleton);
-
-									console.log("Skeleton loaded", skeleton);
-								},
-								function (xhr) {
-									console.log(
-										(xhr.loaded / xhr.total) * 100 +
-											"% loaded"
-									);
-								},
-								function (error) {
-									console.log("An error happened");
-									console.log(error);
 								}
-							);
-						}
-					});
-			}
-		});
+							}
+						});
+					}
+
+					scene.add(model);
+					console.log(`${name} loaded`, model);
+
+					// Execute callback if provided
+					if (callback) callback(model);
+				},
+				function (xhr) {
+					console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+				},
+				function (error) {
+					console.log("An error happened while loading", name);
+					console.log(error);
+				}
+			);
+		}
 
 		// Link presence palette
 		var presence = null;
@@ -161,55 +210,13 @@ define([
 				partsColored = msg.content[0];
 				players = msg.content[1];
 				console.log(partsColored);
-
 				// Load the skeleton model
-				loader.load(
-					"models/skeleton/skeleton.gltf",
-					function (gltf) {
-						skeleton = gltf.scene;
-						skeleton.name = "skeleton";
-
-						skeleton.traverse((node) => {
-							if (node.isMesh) {
-								node.userData.originalMaterial =
-									node.material.clone(); // Save the original material
-
-								// Check if the node's name exists in partsColored array
-								const part = partsColored.find(
-									([name, color]) => name === node.name
-								);
-
-								if (part) {
-									const [name, color] = part;
-
-									// Apply the color from the array
-									node.material =
-										new THREE.MeshStandardMaterial({
-											color: new THREE.Color(color),
-											side: THREE.DoubleSide,
-										});
-								}
-
-								console.log(node.name);
-							}
-						});
-
-						skeleton.scale.set(4, 4, 4);
-						skeleton.position.y += -5;
-						scene.add(skeleton);
-
-						console.log("Skeleton loaded", skeleton);
-					},
-					function (xhr) {
-						console.log(
-							(xhr.loaded / xhr.total) * 100 + "% loaded"
-						);
-					},
-					function (error) {
-						console.log("An error happened");
-						console.log(error);
-					}
-				);
+				loadModel({
+					modelPath: "models/skeleton/skeleton.gltf",
+					name: "skeleton",
+					position: { x: 0, y: -5, z: 0 },
+					scale: { x: 4, y: 4, z: 4 }
+				});
 			}
 
 			if (msg.action == "nextQuestion") {
@@ -254,23 +261,6 @@ define([
 			}
 		};
 
-		env.getEnvironment(function (err, environment) {
-			fillColor = environment.user.colorvalue.fill || fillColor;
-
-			document.getElementById("color-button-fill").style.backgroundColor =
-				fillColor;
-
-			if (environment.sharedId) {
-				console.log("Shared instance");
-				presence = activity.getPresenceObject(function (
-					error,
-					network
-				) {
-					network.onDataReceived(onNetworkDataReceived);
-				});
-			}
-		});
-
 		var onNetworkUserChanged = function (msg) {
 			players.push([msg.user.name, 0]);
 			if (isDoctorActive) {
@@ -290,6 +280,8 @@ define([
 					action: "startDoctor",
 					content: players,
 				});
+				ifDoctorHost = true;
+				startDoctorModePresence();
 			}
 		};
 
@@ -476,34 +468,17 @@ define([
 		const zoomEqualButton = document.getElementById("zoom-equal-button");
 		const zoomToButton = document.getElementById("zoom-to-button");
 
-		// Zoom code is self explanatory
-		const zoomInFunction = (e) => {
-			const fov = getFov();
-			camera.fov = clickZoom(fov, "zoomIn");
-			camera.updateProjectionMatrix();
-			e.stopPropagation();
-		};
+		const zoomFunction = (zoomType, targetFov) => (e) => {
+            let fov = getFov();
+            if (zoomType === "click") {
+                camera.fov = targetFov;
+            } else {
+                camera.fov = clickZoom(fov, zoomType);
+            }
+            camera.updateProjectionMatrix();
+            e.stopPropagation();
+        };
 
-		const zoomOutFunction = (e) => {
-			const fov = getFov();
-			camera.fov = clickZoom(fov, "zoomOut");
-			camera.updateProjectionMatrix();
-			e.stopPropagation();
-		};
-
-		const zoomEqualFunction = (e) => {
-			const fov = getFov();
-			camera.fov = 29;
-			camera.updateProjectionMatrix();
-			e.stopPropagation();
-		};
-
-		const zoomToFunction = (e) => {
-			const fov = getFov();
-			camera.fov = 35;
-			camera.updateProjectionMatrix();
-			e.stopPropagation();
-		};
 
 		const clickZoom = (value, zoomType) => {
 			if (value >= 20 && zoomType === "zoomIn") {
@@ -529,10 +504,10 @@ define([
 		const fov = getFov();
 		camera.updateProjectionMatrix();
 
-		zoomInButton.addEventListener("click", zoomInFunction);
-		zoomOutButton.addEventListener("click", zoomOutFunction);
-		zoomEqualButton.addEventListener("click", zoomEqualFunction);
-		zoomToButton.addEventListener("click", zoomToFunction);
+		zoomInButton.addEventListener("click", zoomFunction("zoomIn"));
+        zoomOutButton.addEventListener("click", zoomFunction("zoomOut"));
+        zoomEqualButton.addEventListener("click", zoomFunction("click", 29));
+        zoomToButton.addEventListener("click", zoomFunction("click", 35));
 
 		// JSON file containing the body parts and their mesh names
 		fetch("./js/bodyParts.json")
@@ -576,7 +551,15 @@ define([
 		}
 
 		function showModal(text) {
+			// Check if a modal is already displayed
+			let existingModal = document.querySelector('.custom-modal');
+			if (existingModal) {
+				// If a modal exists, remove it before showing a new one
+				existingModal.remove();
+			}
+
 			const modal = document.createElement("div");
+			modal.className = "custom-modal";
 
 			// Style the modal
 			modal.style.position = "absolute";
@@ -730,31 +713,12 @@ define([
 		let skeleton;
 
 		if (presence == null) {
-			loader.load(
-				"models/skeleton/skeleton.gltf",
-				function (gltf) {
-					skeleton = gltf.scene;
-					skeleton.name = "skeleton";
-					skeleton.traverse((node) => {
-						if (node.isMesh) {
-							node.userData.originalMaterial =
-								node.material.clone(); // Save the original material
-						}
-					});
-					skeleton.scale.set(4, 4, 4);
-					skeleton.position.y += -5;
-					scene.add(skeleton);
-
-					console.log("Skeleton loaded", skeleton);
-				},
-				function (xhr) {
-					console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
-				},
-				function (error) {
-					console.log("An error happened");
-					console.log(error);
-				}
-			);
+			loadModel({
+				modelPath: "models/skeleton/skeleton.gltf",
+				name: "skeleton",
+				position: { x: 0, y: -5, z: 0 },
+				scale: { x: 4, y: 4, z: 4 }
+			});
 		}
 
 		function setModelColor(model, color) {
