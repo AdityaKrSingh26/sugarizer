@@ -1,7 +1,7 @@
 > [!NOTE]
 > This is a preleminary v2.0 version of Sugarizer.
 > Some differences can be expected in the current documentation.
-> Errors and missing features are listed in the [TODO.md](TODO.md) file.
+> You're welcome to identify and suggest fixes needed.
 
 
 ![](images/sugarizer_logo_with_text.svg)
