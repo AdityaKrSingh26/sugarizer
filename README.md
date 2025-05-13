@@ -1,3 +1,9 @@
+> [!NOTE]
+> This is a preleminary v2.0 version of Sugarizer.
+> Some differences can be expected in the current documentation.
+> You're welcome to identify and suggest fixes needed.
+
+
 ![](images/sugarizer_logo_with_text.svg)
 
 # What is Sugarizer?

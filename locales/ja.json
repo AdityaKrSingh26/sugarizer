@@ -393,7 +393,7 @@
 	"AssignmentError": "Error submitting assignment",
 	"ErrorLoadingFileAssignment": "Cannot Duplicate the Assignment Entry {{file}}",
 	"SortByDueDate": "Sort by due date",
+	"DefaultServerUrlSet": "Default server URL is now {{url}}",
 	"CannotDuplicateAssignment": "Cannot duplicate assignment entry",
-	"CannotDeleteAssignment": "Cannot delete assignment entry",
-	"LoginRedirect": "Please login or create user first"
+	"CannotDeleteAssignment": "Cannot delete assignment entry"
 }
