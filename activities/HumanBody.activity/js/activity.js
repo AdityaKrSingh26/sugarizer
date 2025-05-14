@@ -64,7 +64,7 @@ define([
             // Load from datastore
             if (!environment.objectId) {
                 console.log("New instance");
-                loadModel({
+				loadModel({
 					modelPath: "models/skeleton/skeleton.gltf",
 					name: "skeleton",
 					position: { x: 0, y: -5, z: 0 },
@@ -76,7 +76,7 @@ define([
                     .loadAsText(function (error, metadata, data) {
                         if (error == null && data != null) {
                             partsColored = JSON.parse(data);
-                            loadModel({
+							loadModel({
 								modelPath: "models/skeleton/skeleton.gltf",
 								name: "skeleton",
 								position: { x: 0, y: -5, z: 0 },
