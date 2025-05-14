@@ -469,15 +469,15 @@ define([
 		const zoomToButton = document.getElementById("zoom-to-button");
 
 		const zoomFunction = (zoomType, targetFov) => (e) => {
-            let fov = getFov();
-            if (zoomType === "click") {
-                camera.fov = targetFov;
-            } else {
-                camera.fov = clickZoom(fov, zoomType);
-            }
-            camera.updateProjectionMatrix();
-            e.stopPropagation();
-        };
+			let fov = getFov();
+			if (zoomType === "click") {
+				camera.fov = targetFov;
+			} else {
+				camera.fov = clickZoom(fov, zoomType);
+			}
+			camera.updateProjectionMatrix();
+			e.stopPropagation();
+		};
 
 
 		const clickZoom = (value, zoomType) => {
