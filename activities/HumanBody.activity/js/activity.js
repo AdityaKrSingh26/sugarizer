@@ -63,7 +63,7 @@ define([
 
             // Load from datastore
             if (!environment.objectId) {
-                console.log("New instance");
+				console.log("New instance");
 				loadModel({
 					modelPath: "models/skeleton/skeleton.gltf",
 					name: "skeleton",
@@ -75,7 +75,7 @@ define([
                     .getDatastoreObject()
                     .loadAsText(function (error, metadata, data) {
                         if (error == null && data != null) {
-                            partsColored = JSON.parse(data);
+							partsColored = JSON.parse(data);
 							loadModel({
 								modelPath: "models/skeleton/skeleton.gltf",
 								name: "skeleton",
