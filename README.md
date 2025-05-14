@@ -1,8 +1,7 @@
 > [!NOTE]
 > This is a preleminary v2.0 version of Sugarizer.
 > Some differences can be expected in the current documentation.
-> You're welcome to identify and suggest fixes needed.
-
+> More [here](docs/v2.md).
 
 ![](images/sugarizer_logo_with_text.svg)
 
