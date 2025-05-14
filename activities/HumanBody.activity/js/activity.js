@@ -731,43 +731,6 @@ define([
 			});
 		}
 
-		// loader.load(
-		// 	"models/heart/heart.gltf",
-		// 	function (gltf) {
-		// 		gltf.scene.position.y += 4;
-		// 		setModelColor(gltf.scene, new THREE.Color(0xff0000));
-		// 		scene.add(gltf.scene);
-
-		// 		console.log("Heart loaded", gltf.scene);
-		// 	},
-		// 	function (xhr) {
-		// 		console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
-		// 	},
-		// 	function (error) {
-		// 		console.log("An error happened");
-		// 		console.log(error);
-		// 	}
-		// );
-
-		// loader.load(
-		//     'models/digestive/digestive.gltf',
-		//     function (gltf) {
-		//         gltf.scene.position.y += 3;
-		//         gltf.scene.scale.set(4, 4, 4);
-		//         setModelColor(gltf.scene, new THREE.Color(0x00ff00));
-		//         scene.add(gltf.scene);
-
-		//         console.log('Digestive system loaded', gltf.scene);
-		//     },
-		//     function (xhr) {
-		//         console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-		//     },
-		//     function (error) {
-		//         console.log('An error happened');
-		//         console.log(error);
-		//     }
-		// );
-
 		const raycaster = new THREE.Raycaster();
 		const mouse = new THREE.Vector2();
 
