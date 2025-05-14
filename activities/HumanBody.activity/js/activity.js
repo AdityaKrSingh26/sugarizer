@@ -505,9 +505,9 @@ define([
 		camera.updateProjectionMatrix();
 
 		zoomInButton.addEventListener("click", zoomFunction("zoomIn"));
-        zoomOutButton.addEventListener("click", zoomFunction("zoomOut"));
-        zoomEqualButton.addEventListener("click", zoomFunction("click", 29));
-        zoomToButton.addEventListener("click", zoomFunction("click", 35));
+		zoomOutButton.addEventListener("click", zoomFunction("zoomOut"));
+		zoomEqualButton.addEventListener("click", zoomFunction("click", 29));
+		zoomToButton.addEventListener("click", zoomFunction("click", 35));
 
 		// JSON file containing the body parts and their mesh names
 		fetch("./js/bodyParts.json")
