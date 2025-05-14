@@ -58,8 +58,8 @@ define([
 		// Store the environment
         let currentenv;
 		env.getEnvironment(function (err, environment) {
-            currentenv = environment;
-            username = environment.user.name;
+			currentenv = environment;
+			username = environment.user.name;
 
             // Load from datastore
             if (!environment.objectId) {
