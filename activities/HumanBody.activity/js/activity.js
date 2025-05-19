@@ -56,13 +56,13 @@ define([
 			});
 
 		// Store the environment
-        let currentenv;
+        	let currentenv;
 		env.getEnvironment(function (err, environment) {
 			currentenv = environment;
 			username = environment.user.name;
 
-            // Load from datastore
-            if (!environment.objectId) {
+			// Load from datastore
+			if (!environment.objectId) {
 				console.log("New instance");
 				loadModel({
 					modelPath: "models/skeleton/skeleton.gltf",
@@ -70,11 +70,11 @@ define([
 					position: { x: 0, y: -5, z: 0 },
 					scale: { x: 4, y: 4, z: 4 }
 				});
-            } else {
-                activity
-                    .getDatastoreObject()
-                    .loadAsText(function (error, metadata, data) {
-                        if (error == null && data != null) {
+	            	} else {
+	                	activity
+	                    		.getDatastoreObject()
+	                    		.loadAsText(function (error, metadata, data) {
+	                        		if (error == null && data != null) {
 							partsColored = JSON.parse(data);
 							loadModel({
 								modelPath: "models/skeleton/skeleton.gltf",
@@ -82,25 +82,24 @@ define([
 								position: { x: 0, y: -5, z: 0 },
 								scale: { x: 4, y: 4, z: 4 }
 							});
-                        }
-                    });
-            }
+	                        		}
+	                    		});
+	            	}
 
-            fillColor = environment.user.colorvalue.fill || fillColor;
+            		fillColor = environment.user.colorvalue.fill || fillColor;
 
-            document.getElementById("color-button-fill").style.backgroundColor =
-                fillColor;
+			document.getElementById("color-button-fill").style.backgroundColor = fillColor;
 
-            if (environment.sharedId) {
-                console.log("Shared instance");
-                presence = activity.getPresenceObject(function (
-                    error,
-                    network
-                ) {
-                    network.onDataReceived(onNetworkDataReceived);
-                });
-            }
-        });
+	            	if (environment.sharedId) {
+	                	console.log("Shared instance");
+	                	presence = activity.getPresenceObject(function (
+	                    		error,
+	                    		network
+	                	) {
+	                    		network.onDataReceived(onNetworkDataReceived);
+	                	});
+	            	}
+	        });
 
 		// General function to load models, can be reused for different models
 		function loadModel(options) {
@@ -491,14 +490,7 @@ define([
 		};
 
 		const getFov = () => {
-			return Math.floor(
-				(2 *
-					Math.atan(
-						camera.getFilmHeight() / 2 / camera.getFocalLength()
-					) *
-					180) /
-					Math.PI
-			);
+			return Math.floor( (2 * Math.atan(camera.getFilmHeight() / 2 / camera.getFocalLength()) * 180)/Math.PI );
 		};
 
 		const fov = getFov();
@@ -580,19 +572,19 @@ define([
 			modal.style.color = "#333"; // Darker text color for better contrast
 
 			modal.innerHTML = text;
-            numModals++;
-            // if (numModals > 1) {
-            //     console.log("have modals already")
-            //     modal.style.top = "30%"
-            // }
-            document.body.appendChild(modal);
+		        numModals++;
+		        // if (numModals > 1) {
+		        //     console.log("have modals already")
+		        //     modal.style.top = "30%"
+		        // }
+		        document.body.appendChild(modal);
 
             
 
 			// Make the modal disappear after 1.5 seconds
 			setTimeout(() => {
 				document.body.removeChild(modal);
-                numModals--;
+                		numModals--;
 			}, 1500);
 		}
 
@@ -820,7 +812,7 @@ define([
 								let target = players.findIndex(
 									(innerArray) => innerArray[0] === username
 								);
-                                console.log("the doctor is in")
+                                				console.log("the doctor is in")
 								players[target][1]++;
 								presence.sendMessage(
 									presence.getSharedInfo().id,
@@ -830,7 +822,7 @@ define([
 										content: players,
 									}
 								);
-                                // presenceIndex++;
+                                				// presenceIndex++;
 								// startDoctorModePresence();
 								showLeaderboard();
 							}
@@ -844,8 +836,8 @@ define([
 								);
 							}
 							showModal("Correct! But were you the fastest?");
-                            presenceIndex++;
-                            setTimeout(startDoctorModePresence, 1500)
+			                            	presenceIndex++;
+			                            	setTimeout(startDoctorModePresence, 1500)
 						} else {
 							showModal("Wrong!");
 						}
