@@ -65,7 +65,7 @@ define([
 			if (!environment.objectId) {
 				console.log("New instance");
 				loadModel({
-					modelPath: "models/o/digestive.gltf",
+					modelPath: "models/internalOrgans/digestive.gltf",
 					name: "digestive",
 					position: { x: 0, y: 0, z: 0 },
 					scale: { x: 1, y: 1, z: 1 }
@@ -77,7 +77,7 @@ define([
 	                        		if (error == null && data != null) {
 							partsColored = JSON.parse(data);
 							loadModel({
-								modelPath: "models/o/digestive.gltf",
+								modelPath: "models/internalOrgans/digestive.gltf",
 								name: "digestive",
 								position: { x: 0, y: 0, z: 0 },
 								scale: { x: 1, y: 1, z: 1 }
@@ -248,7 +248,7 @@ define([
 				console.log(partsColored);
 				// Load the skeleton model
 				loadModel({
-					modelPath: "models/o/digestive.gltf",
+					modelPath: "models/internalOrgans/digestive.gltf",
 					name: "digestive",
 					position: { x: 0, y: 0, z: 0 },
 					scale: { x: 1, y: 1, z: 1 }
@@ -744,7 +744,7 @@ define([
 
 		if (presence == null) {
 			loadModel({
-				modelPath: "models/o/digestive.gltf",
+				modelPath: "models/internalOrgans/digestive.gltf",
 				name: "digestive",
 				position: { x: 0, y: 0, z: 0 },
 				scale: { x: 1, y: 1, z: 1 }
