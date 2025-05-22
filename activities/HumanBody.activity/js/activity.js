@@ -65,10 +65,10 @@ define([
 			if (!environment.objectId) {
 				console.log("New instance");
 				loadModel({
-					modelPath: "models/skeleton/skeleton.gltf",
-					name: "skeleton",
-					position: { x: 0, y: -5, z: 0 },
-					scale: { x: 4, y: 4, z: 4 }
+					modelPath: "models/o/digestive.gltf",
+					name: "digestive",
+					position: { x: 0, y: 0, z: 0 },
+					scale: { x: 1, y: 1, z: 1 }
 				});
 	            	} else {
 	                	activity
@@ -77,10 +77,10 @@ define([
 	                        		if (error == null && data != null) {
 							partsColored = JSON.parse(data);
 							loadModel({
-								modelPath: "models/skeleton/skeleton.gltf",
-								name: "skeleton",
-								position: { x: 0, y: -5, z: 0 },
-								scale: { x: 4, y: 4, z: 4 }
+								modelPath: "models/o/digestive.gltf",
+								name: "digestive",
+								position: { x: 0, y: 0, z: 0 },
+								scale: { x: 1, y: 1, z: 1 }
 							});
 	                        		}
 	                    		});
@@ -158,8 +158,45 @@ define([
 							}
 						});
 					}
+					
+					model.traverse((node) => {
+						if (node.isMesh) {
+							// Store original material
+							node.userData.originalMaterial = node.material.clone();
+							
+							// Generate random color
+							const randomColor = new THREE.Color(
+								Math.random(),
+								Math.random(), 
+								Math.random()
+							);
+
+							// Apply random color
+							node.material = new THREE.MeshStandardMaterial({
+								color: randomColor,
+								side: THREE.DoubleSide,
+							});
+						}
+					});
+
 
 					scene.add(model);
+					model.traverse((node) => {
+						if (node.isMesh) {
+							node.userData.originalMaterial = node.material.clone();
+							
+							node.updateMatrixWorld(true);
+							
+							const worldPosition = new THREE.Vector3();
+							node.getWorldPosition(worldPosition);
+							
+							console.log(`Mesh loaded - Name: ${node.name}, Position:`, {
+								x: worldPosition.x.toFixed(2),
+								y: worldPosition.y.toFixed(2),
+								z: worldPosition.z.toFixed(2)
+							});
+						}
+					});
 					console.log(`${name} loaded`, model);
 
 					// Execute callback if provided
@@ -211,10 +248,10 @@ define([
 				console.log(partsColored);
 				// Load the skeleton model
 				loadModel({
-					modelPath: "models/skeleton/skeleton.gltf",
-					name: "skeleton",
-					position: { x: 0, y: -5, z: 0 },
-					scale: { x: 4, y: 4, z: 4 }
+					modelPath: "models/o/digestive.gltf",
+					name: "digestive",
+					position: { x: 0, y: 0, z: 0 },
+					scale: { x: 1, y: 1, z: 1 }
 				});
 			}
 
@@ -691,6 +728,7 @@ define([
 		const ambientLight = new THREE.AmbientLight(0x222222); // Soft ambient lighting
 		scene.add(ambientLight);
 
+		
 		camera.position.set(0, 10, 20);
 		camera.lookAt(0, 0, 0);
 
@@ -706,10 +744,10 @@ define([
 
 		if (presence == null) {
 			loadModel({
-				modelPath: "models/skeleton/skeleton.gltf",
-				name: "skeleton",
-				position: { x: 0, y: -5, z: 0 },
-				scale: { x: 4, y: 4, z: 4 }
+				modelPath: "models/o/digestive.gltf",
+				name: "digestive",
+				position: { x: 0, y: 0, z: 0 },
+				scale: { x: 1, y: 1, z: 1 }
 			});
 		}
 
@@ -747,11 +785,22 @@ define([
 			mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
 			raycaster.setFromCamera(mouse, camera);
-			const intersects = raycaster.intersectObjects(scene.children, true);
+			// Get all intersections and sort them by distance
+			const intersects = raycaster.intersectObjects(scene.children, true)
+				.sort((a, b) => a.distance - b.distance);
+			
 
 			if (intersects.length > 0) {
 				const intersect = intersects[0];
 				const point = intersect.point;
+				const clickedObject = intersect.object;
+				console.log("Clicked mesh name:", clickedObject.name);
+				if (clickedObject.isMesh) {
+					clickedObject.material = new THREE.MeshStandardMaterial({
+						color: new THREE.Color('#FFFF00'),
+						side: THREE.DoubleSide
+					});
+				}
 
 				// Format the point as (x, y, z) and log it
 				const pointString = `(${point.x.toFixed(2)}, ${point.y.toFixed(
