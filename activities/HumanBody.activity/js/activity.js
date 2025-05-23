@@ -124,80 +124,74 @@ define([
 					// Apply scale
 					model.scale.set(scale.x, scale.y, scale.z);
 
-					// Apply color if specified
-					if (color) {
-						model.traverse((node) => {
-							if (node.isMesh) {
-								node.userData.originalMaterial = node.material.clone();
-								node.material = new THREE.MeshStandardMaterial({
-									color: new THREE.Color(color),
-									side: THREE.DoubleSide,
-								});
-							}
-						});
-					}
-
-					// For skeleton specific handling
-					if (name === "skeleton") {
-						model.traverse((node) => {
-							if (node.isMesh) {
-								node.userData.originalMaterial = node.material.clone();
-								
-								// Check if the node's name exists in partsColored array
-								const part = partsColored.find(
-									([partName, partColor]) => partName === node.name
-								);
-
-								if (part) {
-									const [, partColor] = part;
-									node.material = new THREE.MeshStandardMaterial({
-										color: new THREE.Color(partColor),
-										side: THREE.DoubleSide,
-									});
-								}
-							}
-						});
-					}
-					
+					// Improved material handling
 					model.traverse((node) => {
 						if (node.isMesh) {
 							// Store original material
 							node.userData.originalMaterial = node.material.clone();
-							
-							// Generate random color
-							const randomColor = new THREE.Color(
-								Math.random(),
-								Math.random(), 
-								Math.random()
-							);
 
-							// Apply random color
-							node.material = new THREE.MeshStandardMaterial({
-								color: randomColor,
-								side: THREE.DoubleSide,
-							});
-						}
-					});
+							// Ensure proper material setup
+							if (!node.material.isMeshStandardMaterial) {
+								node.material = new THREE.MeshStandardMaterial({
+									color: node.material.color || new THREE.Color(0xffffff),
+									side: THREE.DoubleSide,
+									transparent: false,
+									opacity: 1.0,
+									depthTest: true,
+									depthWrite: true
+								});
+							}
 
+							// Apply saved colors for skeleton model
+							if (name === "digestive") {
+								const part = partsColored.find(
+									([partName, partColor]) => partName === node.name
+								);
+								if (part) {
+									const [, partColor] = part;
+									if (partColor !== "#000000" && partColor !== "#ffffff") {
+										node.material = new THREE.MeshStandardMaterial({
+											color: new THREE.Color(partColor),
+											side: THREE.DoubleSide,
+											transparent: false,
+											opacity: 1.0,
+											depthTest: true,
+											depthWrite: true
+										});
+									}
+								}
+							}
 
-					scene.add(model);
-					model.traverse((node) => {
-						if (node.isMesh) {
-							node.userData.originalMaterial = node.material.clone();
-							
+							// Apply color if specified
+							if (color) {
+								node.material = new THREE.MeshStandardMaterial({
+									color: new THREE.Color(color),
+									side: THREE.DoubleSide,
+									transparent: false,
+									opacity: 1.0,
+									depthTest: true,
+									depthWrite: true
+								});
+							}
+
+							// Log mesh info for debugging
 							node.updateMatrixWorld(true);
-							
 							const worldPosition = new THREE.Vector3();
 							node.getWorldPosition(worldPosition);
-							
-							console.log(`Mesh loaded - Name: ${node.name}, Position:`, {
-								x: worldPosition.x.toFixed(2),
-								y: worldPosition.y.toFixed(2),
-								z: worldPosition.z.toFixed(2)
+
+							console.log(`Mesh loaded - Name: ${node.name}`, {
+								position: {
+									x: worldPosition.x.toFixed(2),
+									y: worldPosition.y.toFixed(2),
+									z: worldPosition.z.toFixed(2)
+								},
+								bounds: node.geometry.boundingBox
 							});
 						}
 					});
-					console.log(`${name} loaded`, model);
+
+					scene.add(model);
+					console.log(`${name} loaded successfully`);
 
 					// Execute callback if provided
 					if (callback) callback(model);
@@ -466,12 +460,15 @@ define([
 			undefined
 		);
 
+		// 1. ADJUST CAMERA NEAR/FAR PLANES
+		// Replace your existing camera setup with:
 		const camera = new THREE.PerspectiveCamera(
 			45,
 			window.innerWidth / window.innerHeight,
-			0.1,
-			1000
+			0.1,    // Increase near plane from very small values
+			1000     // Decrease far plane from very large values
 		);
+
 
 		const goRightButton = document.querySelector("#right-button");
 		const goLeftButton = document.querySelector("#left-button");
@@ -693,9 +690,14 @@ define([
 		const renderer = new THREE.WebGLRenderer({
 			antialias: true,
 			alpha: true,
+			logarithmicDepthBuffer: true
 		});
 		renderer.shadowMap.enabled = true;
 		renderer.setSize(window.innerWidth, window.innerHeight);
+		renderer.sortObjects = true;
+		renderer.depth = true;
+		renderer.depthTest = true;
+		renderer.depthWrite = true;
 		const canvas = document.getElementById("canvas");
 		canvas.appendChild(renderer.domElement);
 		const scene = new THREE.Scene();
@@ -778,6 +780,8 @@ define([
 
 			if (intersects.length > 0) console.log(intersects[0].point);
 		}
+		console.log(scene.children)
+
 
 		function onMouseClick(event) {
 			const rect = renderer.domElement.getBoundingClientRect();
@@ -785,22 +789,25 @@ define([
 			mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
 			raycaster.setFromCamera(mouse, camera);
+			const meshObjects = [];
+			scene.traverse((child) => {
+				if (child.isMesh) {
+					meshObjects.push(child);
+				}
+			});
 			// Get all intersections and sort them by distance
 			const intersects = raycaster.intersectObjects(scene.children, true)
 				.sort((a, b) => a.distance - b.distance);
-			
-
+			console.log(`Found ${intersects.length} intersections`);
 			if (intersects.length > 0) {
 				const intersect = intersects[0];
 				const point = intersect.point;
 				const clickedObject = intersect.object;
+
 				console.log("Clicked mesh name:", clickedObject.name);
-				if (clickedObject.isMesh) {
-					clickedObject.material = new THREE.MeshStandardMaterial({
-						color: new THREE.Color('#FFFF00'),
-						side: THREE.DoubleSide
-					});
-				}
+				console.log("Clicked point:", point);
+				console.log("Object position:", clickedObject.position);
+				console.log("Object world position:", clickedObject.getWorldPosition(new THREE.Vector3()));
 
 				// Format the point as (x, y, z) and log it
 				const pointString = `(${point.x.toFixed(2)}, ${point.y.toFixed(
@@ -811,113 +818,128 @@ define([
 				const object = intersects[0].object;
 
 				if (isPaintActive) {
-					if (object.userData.originalMaterial) {
-						const isColor = !object.material.color.equals(
-							new THREE.Color("#ffffff")
-						);
-						// Traverse partsColored array to check if the object with the same name already exists
-						const index = partsColored.findIndex(
-							([name, color]) => name === object.name
-						);
-
-						// If it exists, remove it from the array
-						if (index !== -1) {
-							partsColored.splice(index, 1);
-						}
-
-						// Push the new entry with the updated color
-						partsColored.push([
-							object.name,
-							isColor ? "#ffffff" : fillColor,
-						]);
-
-						if (presence) {
-							console.log(partsColored);
-							console.log("sending colors");
-							presence.sendMessage(presence.getSharedInfo().id, {
-								user: presence.getUserInfo(),
-								action: "init",
-								content: [partsColored, players],
-							});
-						}
-
-						if (isColor) {
-							object.material =
-								object.userData.originalMaterial.clone();
-						} else {
-							object.material = new THREE.MeshStandardMaterial({
-								color: fillColor,
-								side: THREE.DoubleSide,
-							});
-						}
-					}
+					handlePaintMode(clickedObject);
 				} else if (isDoctorActive) {
-					if (presence) {
-						const targetMeshName =
-							bodyParts[presenceCorrectIndex].mesh;
-						if (object.name === targetMeshName) {
-							if (ifDoctorHost) {
-								firstAnswer = true;
-								let target = players.findIndex(
-									(innerArray) => innerArray[0] === username
-								);
-                                				console.log("the doctor is in")
-								players[target][1]++;
-								presence.sendMessage(
-									presence.getSharedInfo().id,
-									{
-										user: presence.getUserInfo(),
-										action: "update",
-										content: players,
-									}
-								);
-                                				// presenceIndex++;
-								// startDoctorModePresence();
-								showLeaderboard();
-							}
-							if (!ifDoctorHost) {
-								presence.sendMessage(
-									presence.getSharedInfo().id,
-									{
-										user: presence.getUserInfo(),
-										action: "answer",
-									}
-								);
-							}
-							showModal("Correct! But were you the fastest?");
-			                            	presenceIndex++;
-			                            	setTimeout(startDoctorModePresence, 1500)
-						} else {
-							showModal("Wrong!");
-						}
-					} else {
-						const targetMeshName =
-							bodyParts[currentBodyPartIndex].mesh;
-						if (object.name === targetMeshName) {
-							showModal(
-								"Correct! Next: " +
-									bodyParts[++currentBodyPartIndex]?.name
-							);
-						} else {
-							showModal(
-								"Wrong! Try to find " +
-									bodyParts[++currentBodyPartIndex]?.name
-							);
-						}
-
-						if (currentBodyPartIndex >= bodyParts.length) {
-							showModal("Game over! You found all parts.");
-							stopDoctorMode();
-						}
-					}
+					handleDoctorMode(clickedObject);
 				} else if (isLearnActive) {
-					let clickedBodyPart = bodyParts.find(
-						(part) => part.mesh === object.name
-					);
-					if (isLearnActive && clickedBodyPart) {
-						showModal(`You clicked on: ${clickedBodyPart.name}`);
-					}
+					handleLearnMode(clickedObject);
+				} else {
+					console.log("No intersections found");
+					// Debug: log camera and mouse info
+					console.log("Camera position:", camera.position);
+					console.log("Mouse coordinates:", mouse);
 				}
+			}
+		}
+
+		function handlePaintMode(object) {
+			console.log("Paint mode - handling object:", object.name);
+
+			if (!object.userData.originalMaterial) {
+				// Store original material if not already stored
+				object.userData.originalMaterial = object.material.clone();
+				console.log("Stored original material for:", object.name);
+			}
+
+			// Check current color
+			const currentColor = object.material.color;
+			const isDefaultColor = currentColor.equals(new THREE.Color("#ffffff")) ||
+				currentColor.equals(object.userData.originalMaterial.color);
+
+			console.log("Current color:", currentColor.getHexString());
+			console.log("Is default color:", isDefaultColor);
+
+			// Update partsColored array
+			const index = partsColored.findIndex(([name, color]) => name === object.name);
+			if (index !== -1) {
+				partsColored.splice(index, 1);
+			}
+
+			const newColor = isDefaultColor ? fillColor : "#ffffff";
+			partsColored.push([object.name, newColor]);
+
+			// Apply new material
+			if (isDefaultColor) {
+				// Apply fill color
+				object.material = new THREE.MeshStandardMaterial({
+					color: new THREE.Color(fillColor),
+					side: THREE.DoubleSide,
+					transparent: false,
+					opacity: 1.0,
+					depthTest: true,
+					depthWrite: true
+				});
+				console.log("Applied fill color:", fillColor);
+			} else {
+				// Restore original material
+				object.material = object.userData.originalMaterial.clone();
+				console.log("Restored original material");
+			}
+
+			// Sync with network if available
+			if (presence) {
+				console.log("Sending color update via presence");
+				presence.sendMessage(presence.getSharedInfo().id, {
+					user: presence.getUserInfo(),
+					action: "init",
+					content: [partsColored, players],
+				});
+			}
+		}
+
+		function handleDoctorMode(object) {
+			if (presence) {
+				const targetMeshName = bodyParts[presenceCorrectIndex].mesh;
+				if (object.name === targetMeshName) {
+					if (ifDoctorHost) {
+						firstAnswer = true;
+						let target = players.findIndex(
+							(innerArray) => innerArray[0] === username
+						);
+						console.log("Doctor host got correct answer");
+						players[target][1]++;
+						presence.sendMessage(presence.getSharedInfo().id, {
+							user: presence.getUserInfo(),
+							action: "update",
+							content: players,
+						});
+						showLeaderboard();
+					}
+					if (!ifDoctorHost) {
+						presence.sendMessage(presence.getSharedInfo().id, {
+							user: presence.getUserInfo(),
+							action: "answer",
+						});
+					}
+					showModal("Correct! But were you the fastest?");
+					presenceIndex++;
+					setTimeout(startDoctorModePresence, 1500);
+				} else {
+					showModal("Wrong!");
+				}
+			} else {
+				const targetMeshName = bodyParts[currentBodyPartIndex].mesh;
+				if (object.name === targetMeshName) {
+					currentBodyPartIndex++;
+					if (currentBodyPartIndex < bodyParts.length) {
+						showModal("Correct! Next: " + bodyParts[currentBodyPartIndex].name);
+					} else {
+						showModal("Game over! You found all parts.");
+						stopDoctorMode();
+					}
+				} else {
+					showModal("Wrong! Try to find " + bodyParts[currentBodyPartIndex].name);
+				}
+			}
+		}
+
+		// Separate learn mode handling
+		function handleLearnMode(object) {
+			let clickedBodyPart = bodyParts.find((part) => part.mesh === object.name);
+			if (clickedBodyPart) {
+				showModal(`You clicked on: ${clickedBodyPart.name}`);
+			} else {
+				console.log("No body part found for mesh:", object.name);
 			}
 		}
 
