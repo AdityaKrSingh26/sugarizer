@@ -741,6 +741,123 @@ define([
 			if (intersects.length > 0) console.log(intersects[0].point);
 		}
 
+		// handle the click event for painting
+		function handlePaintMode(object) {
+			if (object.userData.originalMaterial) {
+				const isColor = !object.material.color.equals(
+					new THREE.Color("#ffffff")
+				);
+
+				// Traverse partsColored array to check if the object with the same name already exists
+				const index = partsColored.findIndex(
+					([name, color]) => name === object.name
+				);
+
+				// If it exists, remove it from the array
+				if (index !== -1) {
+					partsColored.splice(index, 1);
+				}
+
+				// Push the new entry with the updated color
+				partsColored.push([
+					object.name,
+					isColor ? "#ffffff" : fillColor,
+				]);
+
+				if (presence) {
+					console.log(partsColored);
+					console.log("sending colors");
+					presence.sendMessage(presence.getSharedInfo().id, {
+						user: presence.getUserInfo(),
+						action: "init",
+						content: [partsColored, players],
+					});
+				}
+
+				if (isColor) {
+					object.material = object.userData.originalMaterial.clone();
+				} else {
+					object.material = new THREE.MeshStandardMaterial({
+						color: fillColor,
+						side: THREE.DoubleSide,
+					});
+				}
+			}
+		}
+
+		// handle the click event for doctor mode checks if the clicked object is the correct body part
+		function handleDoctorMode(object) {
+			if (presence) {
+				const targetMeshName = bodyParts[presenceCorrectIndex].mesh;
+
+				if (object.name === targetMeshName) {
+					if (ifDoctorHost) {
+						firstAnswer = true;
+						let target = players.findIndex(
+							(innerArray) => innerArray[0] === username
+						);
+						console.log("the doctor is in");
+						players[target][1]++;
+						presence.sendMessage(
+							presence.getSharedInfo().id,
+							{
+								user: presence.getUserInfo(),
+								action: "update",
+								content: players,
+							}
+						);
+						showLeaderboard();
+					}
+
+					if (!ifDoctorHost) {
+						presence.sendMessage(
+							presence.getSharedInfo().id,
+							{
+								user: presence.getUserInfo(),
+								action: "answer",
+							}
+						);
+					}
+
+					showModal("Correct! But were you the fastest?");
+					presenceIndex++;
+					setTimeout(startDoctorModePresence, 1500);
+				} else {
+					showModal("Wrong!");
+				}
+			} else {
+				const targetMeshName = bodyParts[currentBodyPartIndex].mesh;
+
+				if (object.name === targetMeshName) {
+					showModal(
+						"Correct! Next: " +
+						bodyParts[++currentBodyPartIndex]?.name
+					);
+				} else {
+					showModal(
+						"Wrong! Try to find " +
+						bodyParts[++currentBodyPartIndex]?.name
+					);
+				}
+
+				if (currentBodyPartIndex >= bodyParts.length) {
+					showModal("Game over! You found all parts.");
+					stopDoctorMode();
+				}
+			}
+		}
+
+		// handle the click event for learn mode
+		function handleLearnMode(object) {
+			let clickedBodyPart = bodyParts.find(
+				(part) => part.mesh === object.name
+			);
+
+			if (clickedBodyPart) {
+				showModal(`You clicked on: ${clickedBodyPart.name}`);
+			}
+		}
+
 		function onMouseClick(event) {
 			const rect = renderer.domElement.getBoundingClientRect();
 			mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -762,112 +879,11 @@ define([
 				const object = intersects[0].object;
 
 				if (isPaintActive) {
-					if (object.userData.originalMaterial) {
-						const isColor = !object.material.color.equals(
-							new THREE.Color("#ffffff")
-						);
-						// Traverse partsColored array to check if the object with the same name already exists
-						const index = partsColored.findIndex(
-							([name, color]) => name === object.name
-						);
-
-						// If it exists, remove it from the array
-						if (index !== -1) {
-							partsColored.splice(index, 1);
-						}
-
-						// Push the new entry with the updated color
-						partsColored.push([
-							object.name,
-							isColor ? "#ffffff" : fillColor,
-						]);
-
-						if (presence) {
-							console.log(partsColored);
-							console.log("sending colors");
-							presence.sendMessage(presence.getSharedInfo().id, {
-								user: presence.getUserInfo(),
-								action: "init",
-								content: [partsColored, players],
-							});
-						}
-
-						if (isColor) {
-							object.material =
-								object.userData.originalMaterial.clone();
-						} else {
-							object.material = new THREE.MeshStandardMaterial({
-								color: fillColor,
-								side: THREE.DoubleSide,
-							});
-						}
-					}
+					handlePaintMode(object);
 				} else if (isDoctorActive) {
-					if (presence) {
-						const targetMeshName =
-							bodyParts[presenceCorrectIndex].mesh;
-						if (object.name === targetMeshName) {
-							if (ifDoctorHost) {
-								firstAnswer = true;
-								let target = players.findIndex(
-									(innerArray) => innerArray[0] === username
-								);
-                                				console.log("the doctor is in")
-								players[target][1]++;
-								presence.sendMessage(
-									presence.getSharedInfo().id,
-									{
-										user: presence.getUserInfo(),
-										action: "update",
-										content: players,
-									}
-								);
-                                				// presenceIndex++;
-								// startDoctorModePresence();
-								showLeaderboard();
-							}
-							if (!ifDoctorHost) {
-								presence.sendMessage(
-									presence.getSharedInfo().id,
-									{
-										user: presence.getUserInfo(),
-										action: "answer",
-									}
-								);
-							}
-							showModal("Correct! But were you the fastest?");
-			                            	presenceIndex++;
-			                            	setTimeout(startDoctorModePresence, 1500)
-						} else {
-							showModal("Wrong!");
-						}
-					} else {
-						const targetMeshName =
-							bodyParts[currentBodyPartIndex].mesh;
-						if (object.name === targetMeshName) {
-							showModal(
-								"Correct! Next: " +
-									bodyParts[++currentBodyPartIndex]?.name
-							);
-						} else {
-							showModal(
-								"Wrong! Try to find " +
-									bodyParts[++currentBodyPartIndex]?.name
-							);
-						}
-
-						if (currentBodyPartIndex >= bodyParts.length) {
-							showModal("Game over! You found all parts.");
-							stopDoctorMode();
-						}
-					}
+					handleDoctorMode(object);
 				} else if (isLearnActive) {
-					let clickedBodyPart = bodyParts.find(
-						(part) => part.mesh === object.name
-					);
-					if (isLearnActive && clickedBodyPart) {
-						showModal(`You clicked on: ${clickedBodyPart.name}`);
-					}
+					handleLearnMode(object);
 				}
 			}
 		}
