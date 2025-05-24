@@ -118,22 +118,42 @@ define([
 					const model = gltf.scene;
 					model.name = name;
 
-					// Apply position
+					// Apply transformations
 					model.position.set(position.x, position.y, position.z);
-
-					// Apply scale
 					model.scale.set(scale.x, scale.y, scale.z);
 
-					// Improved material handling
+					let meshCount = 0;
 					model.traverse((node) => {
 						if (node.isMesh) {
-							// Store original material
+							meshCount++;
+
+							// Ensure geometry is properly set up
+							const geometry = node.geometry;
+
+							if (!geometry.boundingBox) {
+								geometry.computeBoundingBox();
+							}
+							if (!geometry.boundingSphere) {
+								geometry.computeBoundingSphere();
+							}
+							if (!geometry.attributes.normal) {
+								geometry.computeVertexNormals();
+							}
+
+							// Force geometry to be non-indexed for better raycasting
+							if (geometry.index) {
+								const nonIndexedGeometry = geometry.toNonIndexed();
+								node.geometry = nonIndexedGeometry;
+								nonIndexedGeometry.computeBoundingBox();
+								nonIndexedGeometry.computeBoundingSphere();
+							}
+
+							// Set up material
 							node.userData.originalMaterial = node.material.clone();
 
-							// Ensure proper material setup
 							if (!node.material.isMeshStandardMaterial) {
 								node.material = new THREE.MeshStandardMaterial({
-									color: node.material.color || new THREE.Color(0xffffff),
+									color: node.material.color || new THREE.Color(0xe7e7e7),
 									side: THREE.DoubleSide,
 									transparent: false,
 									opacity: 1.0,
@@ -142,7 +162,7 @@ define([
 								});
 							}
 
-							// Apply saved colors for skeleton model
+							// Apply saved colors
 							if (name === "digestive") {
 								const part = partsColored.find(
 									([partName, partColor]) => partName === node.name
@@ -162,49 +182,43 @@ define([
 								}
 							}
 
-							// Apply color if specified
-							if (color) {
-								node.material = new THREE.MeshStandardMaterial({
-									color: new THREE.Color(color),
-									side: THREE.DoubleSide,
-									transparent: false,
-									opacity: 1.0,
-									depthTest: true,
-									depthWrite: true
-								});
-							}
+							// Ensure visibility and proper setup
+							node.visible = true;
+							node.castShadow = true;
+							node.receiveShadow = true;
+							node.frustumCulled = false; // Prevent culling issues
 
-							// Log mesh info for debugging
+							// Force matrix update
+							node.updateMatrix();
 							node.updateMatrixWorld(true);
-							const worldPosition = new THREE.Vector3();
-							node.getWorldPosition(worldPosition);
 
-							console.log(`Mesh loaded - Name: ${node.name}`, {
-								position: {
-									x: worldPosition.x.toFixed(2),
-									y: worldPosition.y.toFixed(2),
-									z: worldPosition.z.toFixed(2)
-								},
-								bounds: node.geometry.boundingBox
+							console.log(`Enhanced mesh setup - ${node.name}:`, {
+								triangles: geometry.attributes.position.count / 3,
+								hasNormals: !!geometry.attributes.normal,
+								hasBounds: !!geometry.boundingBox,
+								bounds: geometry.boundingBox
 							});
 						}
 					});
 
-					scene.add(model);
-					console.log(`${name} loaded successfully`);
+					// Update model matrix
+					model.updateMatrix();
+					model.updateMatrixWorld(true);
 
-					// Execute callback if provided
+					scene.add(model);
+					console.log(`Enhanced model ${name} loaded with ${meshCount} meshes`);
+
 					if (callback) callback(model);
 				},
 				function (xhr) {
 					console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
 				},
 				function (error) {
-					console.log("An error happened while loading", name);
-					console.log(error);
+					console.log("Error loading", name, error);
 				}
 			);
 		}
+
 
 		// Link presence palette
 		var presence = null;
@@ -782,55 +796,236 @@ define([
 		}
 		console.log(scene.children)
 
+		// Enhanced raycasting configuration and click handler
+		function setupRaycaster() {
+			// Configure raycaster with better parameters
+			raycaster.near = camera.near;
+			raycaster.far = camera.far;
+			
+			// Set raycaster parameters for better intersection detection
+			raycaster.params.Points.threshold = 0.1;
+			raycaster.params.Line.threshold = 0.1;
+		}
 
+		// Call this after creating your raycaster
+		setupRaycaster();
+
+
+		// Enhanced mouse click handler with multiple intersection strategies
 		function onMouseClick(event) {
+			event.preventDefault();
+			event.stopPropagation();
+
 			const rect = renderer.domElement.getBoundingClientRect();
 			mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
 			mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
+			console.log("Mouse coordinates:", mouse.x, mouse.y);
+			console.log("Screen coordinates:", event.clientX, event.clientY);
+			console.log("Canvas rect:", rect);
+
+			// Update raycaster
 			raycaster.setFromCamera(mouse, camera);
-			const meshObjects = [];
+
+			// Strategy 1: Try intersection with all scene children recursively
+			const sceneIntersects = raycaster.intersectObjects(scene.children, true);
+
+			console.log(`Strategy 1 - Scene intersects: ${sceneIntersects.length}`);
+
+			if (sceneIntersects.length > 0) {
+				handleIntersection(sceneIntersects[0]);
+				return;
+			}
+
+			// Strategy 2: Get all meshes manually and test intersection
+			const allMeshes = [];
 			scene.traverse((child) => {
-				if (child.isMesh) {
-					meshObjects.push(child);
+				if (child.isMesh && child.visible) {
+					// Force update the mesh's world matrix
+					child.updateMatrixWorld(true);
+					allMeshes.push(child);
 				}
 			});
-			// Get all intersections and sort them by distance
-			const intersects = raycaster.intersectObjects(scene.children, true)
-				.sort((a, b) => a.distance - b.distance);
-			console.log(`Found ${intersects.length} intersections`);
-			if (intersects.length > 0) {
-				const intersect = intersects[0];
-				const point = intersect.point;
-				const clickedObject = intersect.object;
 
-				console.log("Clicked mesh name:", clickedObject.name);
-				console.log("Clicked point:", point);
-				console.log("Object position:", clickedObject.position);
-				console.log("Object world position:", clickedObject.getWorldPosition(new THREE.Vector3()));
+			console.log(`Strategy 2 - Testing ${allMeshes.length} meshes directly`);
 
-				// Format the point as (x, y, z) and log it
-				const pointString = `(${point.x.toFixed(2)}, ${point.y.toFixed(
-					2
-				)}, ${point.z.toFixed(2)})`;
-				console.log(`Clicked Point: ${pointString}`);
+			const meshIntersects = raycaster.intersectObjects(allMeshes, false);
 
-				const object = intersects[0].object;
+			if (meshIntersects.length > 0) {
+				handleIntersection(meshIntersects[0]);
+				return;
+			}
 
-				if (isPaintActive) {
-					handlePaintMode(clickedObject);
-				} else if (isDoctorActive) {
-					handleDoctorMode(clickedObject);
-				} else if (isLearnActive) {
-					handleLearnMode(clickedObject);
-				} else {
-					console.log("No intersections found");
-					// Debug: log camera and mouse info
-					console.log("Camera position:", camera.position);
-					console.log("Mouse coordinates:", mouse);
-				}
+			// Strategy 3: Manual intersection testing with expanded bounds
+			console.log("Strategy 3 - Manual intersection testing");
+
+			const expandedRaycaster = new THREE.Raycaster();
+			expandedRaycaster.setFromCamera(mouse, camera);
+			expandedRaycaster.far = camera.far * 2; // Extend far plane
+			expandedRaycaster.near = 0.01; // Reduce near plane
+
+			const expandedIntersects = expandedRaycaster.intersectObjects(allMeshes, false);
+
+			if (expandedIntersects.length > 0) {
+				console.log("Found intersection with expanded raycaster");
+				handleIntersection(expandedIntersects[0]);
+				return;
+			}
+
+			// Strategy 4: Debug mesh bounds to understand the issue
+			debugMeshBounds(allMeshes, mouse);
+		}
+
+		function handleIntersection(intersect) {
+			const point = intersect.point;
+			const clickedObject = intersect.object;
+
+			console.log("=== SUCCESSFUL INTERSECTION ===");
+			console.log("Clicked mesh name:", clickedObject.name);
+			console.log("Clicked point:", point);
+			console.log("Distance:", intersect.distance);
+
+			if (isPaintActive) {
+				handlePaintMode(clickedObject);
+			} else if (isDoctorActive) {
+				handleDoctorMode(clickedObject);
+			} else if (isLearnActive) {
+				handleLearnMode(clickedObject);
 			}
 		}
+
+		function debugMeshBounds(meshes, mousePos) {
+			console.log("=== MESH BOUNDS DEBUG ===");
+			console.log("Mouse position:", mousePos);
+			console.log("Camera position:", camera.position);
+
+			// Create a ray manually to see what it should hit
+			const ray = new THREE.Ray();
+			ray.origin.copy(camera.position);
+			ray.direction.set(mousePos.x, mousePos.y, 0.5).unproject(camera).sub(camera.position).normalize();
+
+			console.log("Manual ray:", ray);
+
+			let closestMesh = null;
+			let closestDistance = Infinity;
+
+			meshes.forEach((mesh, index) => {
+				if (!mesh.geometry.boundingBox) {
+					mesh.geometry.computeBoundingBox();
+				}
+
+				const boundingBox = mesh.geometry.boundingBox.clone();
+				boundingBox.applyMatrix4(mesh.matrixWorld);
+
+				console.log(`Mesh ${index} (${mesh.name}):`, {
+					position: mesh.position,
+					worldPosition: mesh.getWorldPosition(new THREE.Vector3()),
+					bounds: boundingBox,
+					visible: mesh.visible,
+					scale: mesh.scale
+				});
+
+				// Calculate distance from camera to mesh center
+				const meshCenter = boundingBox.getCenter(new THREE.Vector3());
+				const distance = camera.position.distanceTo(meshCenter);
+
+				if (distance < closestDistance) {
+					closestDistance = distance;
+					closestMesh = mesh;
+				}
+			});
+
+			console.log("Closest mesh:", closestMesh?.name, "at distance:", closestDistance);
+		}
+
+		// Alternative click handler that uses screen-space testing
+		function alternativeClickHandler(event) {
+			console.log("=== ALTERNATIVE CLICK HANDLER ===");
+
+			const rect = renderer.domElement.getBoundingClientRect();
+			const x = event.clientX - rect.left;
+			const y = event.clientY - rect.top;
+
+			console.log("Screen coordinates:", x, y);
+			console.log("Canvas size:", rect.width, rect.height);
+
+			// Convert to normalized device coordinates
+			mouse.x = (x / rect.width) * 2 - 1;
+			mouse.y = -(y / rect.height) * 2 + 1;
+
+			console.log("NDC coordinates:", mouse.x, mouse.y);
+
+			// Create a new raycaster with looser parameters
+			const altRaycaster = new THREE.Raycaster();
+			altRaycaster.setFromCamera(mouse, camera);
+
+			// Set more permissive parameters
+			altRaycaster.near = 0.01;
+			altRaycaster.far = 1000;
+			altRaycaster.params.Points.threshold = 1.0;
+			altRaycaster.params.Line.threshold = 1.0;
+
+			// Test intersection with everything
+			const intersects = altRaycaster.intersectObjects(scene.children, true);
+
+			console.log("Alternative handler intersects:", intersects.length);
+
+			if (intersects.length > 0) {
+				const intersect = intersects[0];
+				console.log("Alt intersection:", intersect.object.name, intersect.point);
+				handleIntersection(intersect);
+			} else {
+				console.log("Alternative handler also found no intersections");
+
+				// Last resort: find the mesh closest to the click ray
+				findClosestMeshToRay(altRaycaster);
+			}
+		}
+
+		function findClosestMeshToRay(raycaster) {
+			console.log("=== FINDING CLOSEST MESH TO RAY ===");
+
+			let closestMesh = null;
+			let closestDistance = Infinity;
+
+			scene.traverse((child) => {
+				if (child.isMesh && child.visible) {
+					// Get mesh center
+					if (!child.geometry.boundingBox) {
+						child.geometry.computeBoundingBox();
+					}
+
+					const boundingBox = child.geometry.boundingBox.clone();
+					boundingBox.applyMatrix4(child.matrixWorld);
+					const center = boundingBox.getCenter(new THREE.Vector3());
+
+					// Calculate distance from ray to mesh center
+					const distance = raycaster.ray.distanceToPoint(center);
+
+					console.log(`Mesh ${child.name}: distance to ray = ${distance}`);
+
+					if (distance < closestDistance && distance < 2.0) { // Within 2 units of the ray
+						closestDistance = distance;
+						closestMesh = child;
+					}
+				}
+			});
+
+			if (closestMesh) {
+				console.log("Found closest mesh to ray:", closestMesh.name, "distance:", closestDistance);
+
+				if (isPaintActive) {
+					handlePaintMode(closestMesh);
+				} else if (isDoctorActive) {
+					handleDoctorMode(closestMesh);
+				} else if (isLearnActive) {
+					handleLearnMode(closestMesh);
+				}
+			} else {
+				console.log("No mesh found close to ray");
+			}
+		}
+
 
 		function handlePaintMode(object) {
 			console.log("Paint mode - handling object:", object.name);
@@ -943,7 +1138,8 @@ define([
 			}
 		}
 
-		window.addEventListener("click", onMouseClick, false);
+		// window.addEventListener("click", onMouseClick, false);
+		window.addEventListener("click", alternativeClickHandler, false);
 
 		function animate() {
 			renderer.render(scene, camera);
