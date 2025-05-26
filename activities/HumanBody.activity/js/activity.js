@@ -56,7 +56,7 @@ define([
 			});
 
 		// Store the environment
-        	let currentenv;
+		let currentenv;
 		env.getEnvironment(function (err, environment) {
 			currentenv = environment;
 			username = environment.user.name;
@@ -70,11 +70,11 @@ define([
 					position: { x: 0, y: -5, z: 0 },
 					scale: { x: 4, y: 4, z: 4 }
 				});
-	            	} else {
-	                	activity
-	                    		.getDatastoreObject()
-	                    		.loadAsText(function (error, metadata, data) {
-	                        		if (error == null && data != null) {
+			} else {
+				activity
+					.getDatastoreObject()
+					.loadAsText(function (error, metadata, data) {
+						if (error == null && data != null) {
 							partsColored = JSON.parse(data);
 							loadModel({
 								modelPath: "models/skeleton/skeleton.gltf",
@@ -82,24 +82,24 @@ define([
 								position: { x: 0, y: -5, z: 0 },
 								scale: { x: 4, y: 4, z: 4 }
 							});
-	                        		}
-	                    		});
-	            	}
+						}
+					});
+			}
 
-            		fillColor = environment.user.colorvalue.fill || fillColor;
+			fillColor = environment.user.colorvalue.fill || fillColor;
 
 			document.getElementById("color-button-fill").style.backgroundColor = fillColor;
 
-	            	if (environment.sharedId) {
-	                	console.log("Shared instance");
-	                	presence = activity.getPresenceObject(function (
-	                    		error,
-	                    		network
-	                	) {
-	                    		network.onDataReceived(onNetworkDataReceived);
-	                	});
-	            	}
-	        });
+			if (environment.sharedId) {
+				console.log("Shared instance");
+				presence = activity.getPresenceObject(function (
+						error,
+						network
+					) {
+					network.onDataReceived(onNetworkDataReceived);
+				});
+			}
+		});
 
 		// General function to load models, can be reused for different models
 		function loadModel(options) {
@@ -231,7 +231,7 @@ define([
 			}
 
 			if (msg.action == "answer") {
-                console.log("answering")
+				console.log("answering")
 				if (!ifDoctorHost || !firstAnswer) {
 					return;
 				}
@@ -572,19 +572,19 @@ define([
 			modal.style.color = "#333"; // Darker text color for better contrast
 
 			modal.innerHTML = text;
-		        numModals++;
-		        // if (numModals > 1) {
-		        //     console.log("have modals already")
-		        //     modal.style.top = "30%"
-		        // }
-		        document.body.appendChild(modal);
+			numModals++;
+			// if (numModals > 1) {
+			//     console.log("have modals already")
+			//     modal.style.top = "30%"
+			// }
+			document.body.appendChild(modal);
 
             
 
 			// Make the modal disappear after 1.5 seconds
 			setTimeout(() => {
 				document.body.removeChild(modal);
-                		numModals--;
+					numModals--;
 			}, 1500);
 		}
 
