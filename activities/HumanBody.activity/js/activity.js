@@ -28,7 +28,7 @@ define([
 		let presenceIndex = 0;
 		let ifDoctorHost = false;
 		let firstAnswer = true;
-        let numModals = 0;
+		let numModals = 0;
 
 		var paletteColorFill = new colorpaletteFill.ColorPalette(
 			document.getElementById("color-button-fill"),
@@ -578,8 +578,6 @@ define([
 			//     modal.style.top = "30%"
 			// }
 			document.body.appendChild(modal);
-
-            
 
 			// Make the modal disappear after 1.5 seconds
 			setTimeout(() => {
