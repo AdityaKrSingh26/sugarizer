@@ -65,9 +65,11 @@ define([
 			if (!environment.objectId) {
 				console.log("New instance");
 				loadModel({
-					modelPath: "models/skeleton/skeleton.gltf",
+					// modelPath: "models/organs/organs.gltf",
+					// modelPath: "models/skeleton/skeleton.gltf",
+					modelPath: "models/human/skin.gltf",
 					name: "skeleton",
-					position: { x: 0, y: -5, z: 0 },
+					position: { x: 0, y: 0, z: 0 },
 					scale: { x: 4, y: 4, z: 4 }
 				});
 			} else {
@@ -77,9 +79,11 @@ define([
 						if (error == null && data != null) {
 							partsColored = JSON.parse(data);
 							loadModel({
-								modelPath: "models/skeleton/skeleton.gltf",
+								// modelPath: "models/organs/organs.gltf",
+								// modelPath: "models/skeleton/skeleton.gltf",
+								modelPath: "models/human/skin.gltf",
 								name: "skeleton",
-								position: { x: 0, y: -5, z: 0 },
+								position: { x: 0, y: 0, z: 0 },
 								scale: { x: 4, y: 4, z: 4 }
 							});
 						}
@@ -118,59 +122,103 @@ define([
 					const model = gltf.scene;
 					model.name = name;
 
-					// Apply position
+					// Apply transformations
 					model.position.set(position.x, position.y, position.z);
-
-					// Apply scale
 					model.scale.set(scale.x, scale.y, scale.z);
 
-					// Apply color if specified
-					if (color) {
-						model.traverse((node) => {
-							if (node.isMesh) {
-								node.userData.originalMaterial = node.material.clone();
+					let meshCount = 0;
+					model.traverse((node) => {
+						if (node.isMesh) {
+							meshCount++;
+
+							// Ensure geometry is properly set up
+							const geometry = node.geometry;
+
+							if (!geometry.boundingBox) {
+								geometry.computeBoundingBox();
+							}
+							if (!geometry.boundingSphere) {
+								geometry.computeBoundingSphere();
+							}
+							if (!geometry.attributes.normal) {
+								geometry.computeVertexNormals();
+							}
+
+							// Force geometry to be non-indexed for better raycasting
+							if (geometry.index) {
+								const nonIndexedGeometry = geometry.toNonIndexed();
+								node.geometry = nonIndexedGeometry;
+								nonIndexedGeometry.computeBoundingBox();
+								nonIndexedGeometry.computeBoundingSphere();
+							}
+
+							// Set up material
+							node.userData.originalMaterial = node.material.clone();
+
+							if (!node.material.isMeshStandardMaterial) {
 								node.material = new THREE.MeshStandardMaterial({
-									color: new THREE.Color(color),
+									color: node.material.color || new THREE.Color(0xe7e7e7),
 									side: THREE.DoubleSide,
+									transparent: false,
+									opacity: 1.0,
+									depthTest: true,
+									depthWrite: true
 								});
 							}
-						});
-					}
 
-					// For skeleton specific handling
-					if (name === "skeleton") {
-						model.traverse((node) => {
-							if (node.isMesh) {
-								node.userData.originalMaterial = node.material.clone();
-
-								// Check if the node's name exists in partsColored array
+							// Apply saved colors
+							if (name === "skeleton") {
 								const part = partsColored.find(
 									([partName, partColor]) => partName === node.name
 								);
-
 								if (part) {
 									const [, partColor] = part;
-									node.material = new THREE.MeshStandardMaterial({
-										color: new THREE.Color(partColor),
-										side: THREE.DoubleSide,
-									});
+									if (partColor !== "#000000" && partColor !== "#ffffff") {
+										node.material = new THREE.MeshStandardMaterial({
+											color: new THREE.Color(partColor),
+											side: THREE.DoubleSide,
+											transparent: false,
+											opacity: 1.0,
+											depthTest: true,
+											depthWrite: true
+										});
+									}
 								}
 							}
-						});
-					}
+
+							// Ensure visibility and proper setup
+							node.visible = true;
+							node.castShadow = true;
+							node.receiveShadow = true;
+							node.frustumCulled = false; // Prevent culling issues
+
+							// Force matrix update
+							node.updateMatrix();
+							node.updateMatrixWorld(true);
+
+							// console.log(`Enhanced mesh setup - ${node.name}:`, {
+							// 	triangles: geometry.attributes.position.count / 3,
+							// 	hasNormals: !!geometry.attributes.normal,
+							// 	hasBounds: !!geometry.boundingBox,
+							// 	bounds: geometry.boundingBox
+							// });
+						}
+					});
+
+					// Update model matrix
+					model.updateMatrix();
+					model.updateMatrixWorld(true);
 
 					scene.add(model);
-					console.log(`${name} loaded`, model);
+					console.log(`model ${name} loaded with ${meshCount} meshes`);
 
-					// Execute callback if provided
 					if (callback) callback(model);
 				},
 				function (xhr) {
 					console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
 				},
 				function (error) {
-					console.log("An error happened while loading", name);
-					console.log(error);
+					console.log("Error loading", name, error);
 				}
 			);
 		}
@@ -211,9 +259,11 @@ define([
 				console.log(partsColored);
 				// Load the skeleton model
 				loadModel({
-					modelPath: "models/skeleton/skeleton.gltf",
+					// modelPath: "models/organs/organs.gltf",
+					// modelPath: "models/skeleton/skeleton.gltf",
+					modelPath: "models/human/skin.gltf",
 					name: "skeleton",
-					position: { x: 0, y: -5, z: 0 },
+					position: { x: 0, y: 0, z: 0 },
 					scale: { x: 4, y: 4, z: 4 }
 				});
 			}
@@ -656,6 +706,7 @@ define([
 		const renderer = new THREE.WebGLRenderer({
 			antialias: true,
 			alpha: true,
+			logarithmicDepthBuffer: true
 		});
 		renderer.shadowMap.enabled = true;
 		renderer.setSize(window.innerWidth, window.innerHeight);
@@ -706,9 +757,11 @@ define([
 
 		if (presence == null) {
 			loadModel({
-				modelPath: "models/skeleton/skeleton.gltf",
+				// modelPath: "models/organs/organs.gltf",
+				// modelPath: "models/skeleton/skeleton.gltf",
+				modelPath: "models/human/skin.gltf",
 				name: "skeleton",
-				position: { x: 0, y: -5, z: 0 },
+				position: { x: 0, y: 0, z: 0 },
 				scale: { x: 4, y: 4, z: 4 }
 			});
 		}
@@ -725,6 +778,35 @@ define([
 
 		const raycaster = new THREE.Raycaster();
 		const mouse = new THREE.Vector2();
+
+		function setupRaycaster() {
+			raycaster.near = camera.near;
+			raycaster.far = camera.far;
+
+			// Set raycaster parameters for better intersection detection
+			raycaster.params.Points.threshold = 0.1;
+			raycaster.params.Line.threshold = 0.1;
+		}
+
+		setupRaycaster();
+
+		function handleIntersection(intersect) {
+			const point = intersect.point;
+			const clickedObject = intersect.object;
+
+			console.log("=== SUCCESSFUL INTERSECTION ===");
+			console.log("Clicked mesh name:", clickedObject.name);
+			console.log("Clicked point:", point);
+			console.log("Distance:", intersect.distance);
+
+			if (isPaintActive) {
+				handlePaintMode(clickedObject);
+			} else if (isDoctorActive) {
+				handleDoctorMode(clickedObject);
+			} else if (isLearnActive) {
+				handleLearnMode(clickedObject);
+			}
+		}
 
 		function getClicked3DPoint() {
 			mouse.x =
@@ -743,45 +825,57 @@ define([
 
 		// handle the click event for painting
 		function handlePaintMode(object) {
-			if (object.userData.originalMaterial) {
-				const isColor = !object.material.color.equals(
-					new THREE.Color("#ffffff")
-				);
+			// console.log("Paint mode - handling object:", object.name);
 
-				// Traverse partsColored array to check if the object with the same name already exists
-				const index = partsColored.findIndex(
-					([name, color]) => name === object.name
-				);
+			if (!object.userData.originalMaterial) {
+				// Store original material if not already stored
+				object.userData.originalMaterial = object.material.clone();
+				console.log("Stored original material for:", object.name);
+			}
 
-				// If it exists, remove it from the array
-				if (index !== -1) {
-					partsColored.splice(index, 1);
-				}
+			// Check current color
+			const currentColor = object.material.color;
+			const isDefaultColor = currentColor.equals(new THREE.Color("#ffffff")) ||
+				currentColor.equals(object.userData.originalMaterial.color);
 
-				// Push the new entry with the updated color
-				partsColored.push([
-					object.name,
-					isColor ? "#ffffff" : fillColor,
-				]);
+			console.log("Current color:", currentColor.getHexString());
+			console.log("Is default color:", isDefaultColor);
 
-				if (presence) {
-					console.log(partsColored);
-					console.log("sending colors");
-					presence.sendMessage(presence.getSharedInfo().id, {
-						user: presence.getUserInfo(),
-						action: "init",
-						content: [partsColored, players],
-					});
-				}
+			// Update partsColored array
+			const index = partsColored.findIndex(([name, color]) => name === object.name);
+			if (index !== -1) {
+				partsColored.splice(index, 1);
+			}
 
-				if (isColor) {
-					object.material = object.userData.originalMaterial.clone();
-				} else {
-					object.material = new THREE.MeshStandardMaterial({
-						color: fillColor,
-						side: THREE.DoubleSide,
-					});
-				}
+			const newColor = isDefaultColor ? fillColor : "#ffffff";
+			partsColored.push([object.name, newColor]);
+
+			// Apply new material
+			if (isDefaultColor) {
+				// Apply fill color
+				object.material = new THREE.MeshStandardMaterial({
+					color: new THREE.Color(fillColor),
+					side: THREE.DoubleSide,
+					transparent: false,
+					opacity: 1.0,
+					depthTest: true,
+					depthWrite: true
+				});
+				console.log("Applied fill color:", fillColor);
+			} else {
+				// Restore original material
+				object.material = object.userData.originalMaterial.clone();
+				console.log("Restored original material");
+			}
+
+			// Sync with network if available
+			if (presence) {
+				console.log("Sending color update via presence");
+				presence.sendMessage(presence.getSharedInfo().id, {
+					user: presence.getUserInfo(),
+					action: "init",
+					content: [partsColored, players],
+				});
 			}
 		}
 
@@ -858,6 +952,94 @@ define([
 			}
 		}
 
+		// Alternative click handler that uses screen-space testing
+		function alternativeClickHandler(event) {
+			console.log("=== ALTERNATIVE CLICK HANDLER ===");
+
+			const rect = renderer.domElement.getBoundingClientRect();
+			const x = event.clientX - rect.left;
+			const y = event.clientY - rect.top;
+
+			console.log("Screen coordinates:", x, y);
+			console.log("Canvas size:", rect.width, rect.height);
+
+			// Convert to normalized device coordinates
+			mouse.x = (x / rect.width) * 2 - 1;
+			mouse.y = -(y / rect.height) * 2 + 1;
+
+			console.log("NDC coordinates:", mouse.x, mouse.y);
+
+			// Create a new raycaster with looser parameters
+			const altRaycaster = new THREE.Raycaster();
+			altRaycaster.setFromCamera(mouse, camera);
+
+			// Set more permissive parameters
+			altRaycaster.near = 0.01;
+			altRaycaster.far = 1000;
+			altRaycaster.params.Points.threshold = 1.0;
+			altRaycaster.params.Line.threshold = 1.0;
+
+			// Test intersection with everything
+			const intersects = altRaycaster.intersectObjects(scene.children, true);
+
+			console.log("Alternative handler intersects:", intersects.length);
+
+			if (intersects.length > 0) {
+				const intersect = intersects[0];
+				console.log("Alt intersection:", intersect.object.name, intersect.point);
+				handleIntersection(intersect);
+			} else {
+				console.log("Alternative handler also found no intersections");
+
+				// Last resort: find the mesh closest to the click ray
+				findClosestMeshToRay(altRaycaster);
+			}
+		}
+
+		function findClosestMeshToRay(raycaster) {
+			console.log("=== FINDING CLOSEST MESH TO RAY ===");
+
+			let closestMesh = null;
+			let closestDistance = Infinity;
+
+			scene.traverse((child) => {
+				if (child.isMesh && child.visible) {
+					// Get mesh center
+					if (!child.geometry.boundingBox) {
+						child.geometry.computeBoundingBox();
+					}
+
+					const boundingBox = child.geometry.boundingBox.clone();
+					boundingBox.applyMatrix4(child.matrixWorld);
+					const center = boundingBox.getCenter(new THREE.Vector3());
+
+					// Calculate distance from ray to mesh center
+					const distance = raycaster.ray.distanceToPoint(center);
+
+					// console.log(`Mesh ${child.name}: distance to ray = ${distance}`);
+
+					if (distance < closestDistance && distance < 2.0) { // Within 2 units of the ray
+						closestDistance = distance;
+						closestMesh = child;
+					}
+				}
+			});
+
+			if (closestMesh) {
+				console.log("Found closest mesh to ray:", closestMesh.name, "distance:", closestDistance);
+
+				if (isPaintActive) {
+					handlePaintMode(closestMesh);
+				} else if (isDoctorActive) {
+					handleDoctorMode(closestMesh);
+				} else if (isLearnActive) {
+					handleLearnMode(closestMesh);
+				}
+			} else {
+				console.log("No mesh found close to ray");
+			}
+		}
+
 		function onMouseClick(event) {
 			const rect = renderer.domElement.getBoundingClientRect();
 			mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -888,7 +1070,8 @@ define([
 			}
 		}
 
-		window.addEventListener("click", onMouseClick, false);
+		// window.addEventListener("click", onMouseClick, false);
+		window.addEventListener("click", alternativeClickHandler, false);
 
 		function animate() {
 			renderer.render(scene, camera);
