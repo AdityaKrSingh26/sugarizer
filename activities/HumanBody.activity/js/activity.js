@@ -28,7 +28,7 @@ define([
 		let presenceIndex = 0;
 		let ifDoctorHost = false;
 		let firstAnswer = true;
-        let numModals = 0;
+		let numModals = 0;
 
 		var paletteColorFill = new colorpaletteFill.ColorPalette(
 			document.getElementById("color-button-fill"),
@@ -55,77 +55,125 @@ define([
 				});
 			});
 
+		// Store the environment
+		let currentenv;
 		env.getEnvironment(function (err, environment) {
 			currentenv = environment;
 			username = environment.user.name;
 
 			// Load from datastore
-			// Load from datastore
 			if (!environment.objectId) {
 				console.log("New instance");
+				loadModel({
+					modelPath: "models/skeleton/skeleton.gltf",
+					name: "skeleton",
+					position: { x: 0, y: -5, z: 0 },
+					scale: { x: 4, y: 4, z: 4 }
+				});
 			} else {
 				activity
 					.getDatastoreObject()
 					.loadAsText(function (error, metadata, data) {
 						if (error == null && data != null) {
 							partsColored = JSON.parse(data);
-							loader.load(
-								"models/skeleton/skeleton.gltf",
-								function (gltf) {
-									skeleton = gltf.scene;
-									skeleton.name = "skeleton";
-
-									skeleton.traverse((node) => {
-										if (node.isMesh) {
-											node.userData.originalMaterial =
-												node.material.clone(); // Save the original material
-
-											// Check if the node's name exists in partsColored array
-											const part = partsColored.find(
-												([name, color]) =>
-													name === node.name
-											);
-
-											if (part) {
-												const [name, color] = part;
-
-												// Apply the color from the array
-												node.material =
-													new THREE.MeshStandardMaterial(
-														{
-															color: new THREE.Color(
-																color
-															),
-															side: THREE.DoubleSide,
-														}
-													);
-											}
-
-											console.log(node.name);
-										}
-									});
-
-									skeleton.scale.set(4, 4, 4);
-									skeleton.position.y += -5;
-									scene.add(skeleton);
-
-									console.log("Skeleton loaded", skeleton);
-								},
-								function (xhr) {
-									console.log(
-										(xhr.loaded / xhr.total) * 100 +
-											"% loaded"
-									);
-								},
-								function (error) {
-									console.log("An error happened");
-									console.log(error);
-								}
-							);
+							loadModel({
+								modelPath: "models/skeleton/skeleton.gltf",
+								name: "skeleton",
+								position: { x: 0, y: -5, z: 0 },
+								scale: { x: 4, y: 4, z: 4 }
+							});
 						}
 					});
 			}
+
+			fillColor = environment.user.colorvalue.fill || fillColor;
+
+			document.getElementById("color-button-fill").style.backgroundColor = fillColor;
+
+			if (environment.sharedId) {
+				console.log("Shared instance");
+				presence = activity.getPresenceObject(function (
+						error,
+						network
+					) {
+					network.onDataReceived(onNetworkDataReceived);
+				});
+			}
 		});
+
+		// General function to load models, can be reused for different models
+		function loadModel(options) {
+			const {
+				modelPath,
+				name,
+				position = { x: 0, y: 0, z: 0 },
+				scale = { x: 1, y: 1, z: 1 },
+				color = null,
+				callback = null
+			} = options;
+
+			loader.load(
+				modelPath,
+				function (gltf) {
+					const model = gltf.scene;
+					model.name = name;
+
+					// Apply position
+					model.position.set(position.x, position.y, position.z);
+
+					// Apply scale
+					model.scale.set(scale.x, scale.y, scale.z);
+
+					// Apply color if specified
+					if (color) {
+						model.traverse((node) => {
+							if (node.isMesh) {
+								node.userData.originalMaterial = node.material.clone();
+								node.material = new THREE.MeshStandardMaterial({
+									color: new THREE.Color(color),
+									side: THREE.DoubleSide,
+								});
+							}
+						});
+					}
+
+					// For skeleton specific handling
+					if (name === "skeleton") {
+						model.traverse((node) => {
+							if (node.isMesh) {
+								node.userData.originalMaterial = node.material.clone();
+								
+								// Check if the node's name exists in partsColored array
+								const part = partsColored.find(
+									([partName, partColor]) => partName === node.name
+								);
+
+								if (part) {
+									const [, partColor] = part;
+									node.material = new THREE.MeshStandardMaterial({
+										color: new THREE.Color(partColor),
+										side: THREE.DoubleSide,
+									});
+								}
+							}
+						});
+					}
+
+					scene.add(model);
+					console.log(`${name} loaded`, model);
+
+					// Execute callback if provided
+					if (callback) callback(model);
+				},
+				function (xhr) {
+					console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+				},
+				function (error) {
+					console.log("An error happened while loading", name);
+					console.log(error);
+				}
+			);
+		}
 
 		// Link presence palette
 		var presence = null;
@@ -161,55 +209,13 @@ define([
 				partsColored = msg.content[0];
 				players = msg.content[1];
 				console.log(partsColored);
-
 				// Load the skeleton model
-				loader.load(
-					"models/skeleton/skeleton.gltf",
-					function (gltf) {
-						skeleton = gltf.scene;
-						skeleton.name = "skeleton";
-
-						skeleton.traverse((node) => {
-							if (node.isMesh) {
-								node.userData.originalMaterial =
-									node.material.clone(); // Save the original material
-
-								// Check if the node's name exists in partsColored array
-								const part = partsColored.find(
-									([name, color]) => name === node.name
-								);
-
-								if (part) {
-									const [name, color] = part;
-
-									// Apply the color from the array
-									node.material =
-										new THREE.MeshStandardMaterial({
-											color: new THREE.Color(color),
-											side: THREE.DoubleSide,
-										});
-								}
-
-								console.log(node.name);
-							}
-						});
-
-						skeleton.scale.set(4, 4, 4);
-						skeleton.position.y += -5;
-						scene.add(skeleton);
-
-						console.log("Skeleton loaded", skeleton);
-					},
-					function (xhr) {
-						console.log(
-							(xhr.loaded / xhr.total) * 100 + "% loaded"
-						);
-					},
-					function (error) {
-						console.log("An error happened");
-						console.log(error);
-					}
-				);
+				loadModel({
+					modelPath: "models/skeleton/skeleton.gltf",
+					name: "skeleton",
+					position: { x: 0, y: -5, z: 0 },
+					scale: { x: 4, y: 4, z: 4 }
+				});
 			}
 
 			if (msg.action == "nextQuestion") {
@@ -225,7 +231,7 @@ define([
 			}
 
 			if (msg.action == "answer") {
-                console.log("answering")
+				console.log("answering")
 				if (!ifDoctorHost || !firstAnswer) {
 					return;
 				}
@@ -254,23 +260,6 @@ define([
 			}
 		};
 
-		env.getEnvironment(function (err, environment) {
-			fillColor = environment.user.colorvalue.fill || fillColor;
-
-			document.getElementById("color-button-fill").style.backgroundColor =
-				fillColor;
-
-			if (environment.sharedId) {
-				console.log("Shared instance");
-				presence = activity.getPresenceObject(function (
-					error,
-					network
-				) {
-					network.onDataReceived(onNetworkDataReceived);
-				});
-			}
-		});
-
 		var onNetworkUserChanged = function (msg) {
 			players.push([msg.user.name, 0]);
 			if (isDoctorActive) {
@@ -290,6 +279,8 @@ define([
 					action: "startDoctor",
 					content: players,
 				});
+				ifDoctorHost = true;
+				startDoctorModePresence();
 			}
 		};
 
@@ -476,34 +467,17 @@ define([
 		const zoomEqualButton = document.getElementById("zoom-equal-button");
 		const zoomToButton = document.getElementById("zoom-to-button");
 
-		// Zoom code is self explanatory
-		const zoomInFunction = (e) => {
-			const fov = getFov();
-			camera.fov = clickZoom(fov, "zoomIn");
+		const zoomFunction = (zoomType, targetFov) => (e) => {
+			let fov = getFov();
+			if (zoomType === "click") {
+				camera.fov = targetFov;
+			} else {
+				camera.fov = clickZoom(fov, zoomType);
+			}
 			camera.updateProjectionMatrix();
 			e.stopPropagation();
 		};
 
-		const zoomOutFunction = (e) => {
-			const fov = getFov();
-			camera.fov = clickZoom(fov, "zoomOut");
-			camera.updateProjectionMatrix();
-			e.stopPropagation();
-		};
-
-		const zoomEqualFunction = (e) => {
-			const fov = getFov();
-			camera.fov = 29;
-			camera.updateProjectionMatrix();
-			e.stopPropagation();
-		};
-
-		const zoomToFunction = (e) => {
-			const fov = getFov();
-			camera.fov = 35;
-			camera.updateProjectionMatrix();
-			e.stopPropagation();
-		};
 
 		const clickZoom = (value, zoomType) => {
 			if (value >= 20 && zoomType === "zoomIn") {
@@ -516,23 +490,16 @@ define([
 		};
 
 		const getFov = () => {
-			return Math.floor(
-				(2 *
-					Math.atan(
-						camera.getFilmHeight() / 2 / camera.getFocalLength()
-					) *
-					180) /
-					Math.PI
-			);
+			return Math.floor( (2 * Math.atan(camera.getFilmHeight() / 2 / camera.getFocalLength()) * 180)/Math.PI );
 		};
 
 		const fov = getFov();
 		camera.updateProjectionMatrix();
 
-		zoomInButton.addEventListener("click", zoomInFunction);
-		zoomOutButton.addEventListener("click", zoomOutFunction);
-		zoomEqualButton.addEventListener("click", zoomEqualFunction);
-		zoomToButton.addEventListener("click", zoomToFunction);
+		zoomInButton.addEventListener("click", zoomFunction("zoomIn"));
+		zoomOutButton.addEventListener("click", zoomFunction("zoomOut"));
+		zoomEqualButton.addEventListener("click", zoomFunction("click", 29));
+		zoomToButton.addEventListener("click", zoomFunction("click", 35));
 
 		// JSON file containing the body parts and their mesh names
 		fetch("./js/bodyParts.json")
@@ -576,7 +543,15 @@ define([
 		}
 
 		function showModal(text) {
+			// Check if a modal is already displayed
+			let existingModal = document.querySelector('.custom-modal');
+			if (existingModal) {
+				// If a modal exists, remove it before showing a new one
+				existingModal.remove();
+			}
+
 			const modal = document.createElement("div");
+			modal.className = "custom-modal";
 
 			// Style the modal
 			modal.style.position = "absolute";
@@ -597,19 +572,17 @@ define([
 			modal.style.color = "#333"; // Darker text color for better contrast
 
 			modal.innerHTML = text;
-            numModals++;
-            // if (numModals > 1) {
-            //     console.log("have modals already")
-            //     modal.style.top = "30%"
-            // }
-            document.body.appendChild(modal);
-
-            
+			numModals++;
+			// if (numModals > 1) {
+			//     console.log("have modals already")
+			//     modal.style.top = "30%"
+			// }
+			document.body.appendChild(modal);
 
 			// Make the modal disappear after 1.5 seconds
 			setTimeout(() => {
 				document.body.removeChild(modal);
-                numModals--;
+					numModals--;
 			}, 1500);
 		}
 
@@ -730,31 +703,12 @@ define([
 		let skeleton;
 
 		if (presence == null) {
-			loader.load(
-				"models/skeleton/skeleton.gltf",
-				function (gltf) {
-					skeleton = gltf.scene;
-					skeleton.name = "skeleton";
-					skeleton.traverse((node) => {
-						if (node.isMesh) {
-							node.userData.originalMaterial =
-								node.material.clone(); // Save the original material
-						}
-					});
-					skeleton.scale.set(4, 4, 4);
-					skeleton.position.y += -5;
-					scene.add(skeleton);
-
-					console.log("Skeleton loaded", skeleton);
-				},
-				function (xhr) {
-					console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
-				},
-				function (error) {
-					console.log("An error happened");
-					console.log(error);
-				}
-			);
+			loadModel({
+				modelPath: "models/skeleton/skeleton.gltf",
+				name: "skeleton",
+				position: { x: 0, y: -5, z: 0 },
+				scale: { x: 4, y: 4, z: 4 }
+			});
 		}
 
 		function setModelColor(model, color) {
@@ -766,43 +720,6 @@ define([
 				}
 			});
 		}
-
-		// loader.load(
-		// 	"models/heart/heart.gltf",
-		// 	function (gltf) {
-		// 		gltf.scene.position.y += 4;
-		// 		setModelColor(gltf.scene, new THREE.Color(0xff0000));
-		// 		scene.add(gltf.scene);
-
-		// 		console.log("Heart loaded", gltf.scene);
-		// 	},
-		// 	function (xhr) {
-		// 		console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
-		// 	},
-		// 	function (error) {
-		// 		console.log("An error happened");
-		// 		console.log(error);
-		// 	}
-		// );
-
-		// loader.load(
-		//     'models/digestive/digestive.gltf',
-		//     function (gltf) {
-		//         gltf.scene.position.y += 3;
-		//         gltf.scene.scale.set(4, 4, 4);
-		//         setModelColor(gltf.scene, new THREE.Color(0x00ff00));
-		//         scene.add(gltf.scene);
-
-		//         console.log('Digestive system loaded', gltf.scene);
-		//     },
-		//     function (xhr) {
-		//         console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-		//     },
-		//     function (error) {
-		//         console.log('An error happened');
-		//         console.log(error);
-		//     }
-		// );
 
 		const raycaster = new THREE.Raycaster();
 		const mouse = new THREE.Vector2();
@@ -820,6 +737,123 @@ define([
 			);
 
 			if (intersects.length > 0) console.log(intersects[0].point);
+		}
+
+		// handle the click event for painting
+		function handlePaintMode(object) {
+			if (object.userData.originalMaterial) {
+				const isColor = !object.material.color.equals(
+					new THREE.Color("#ffffff")
+				);
+
+				// Traverse partsColored array to check if the object with the same name already exists
+				const index = partsColored.findIndex(
+					([name, color]) => name === object.name
+				);
+
+				// If it exists, remove it from the array
+				if (index !== -1) {
+					partsColored.splice(index, 1);
+				}
+
+				// Push the new entry with the updated color
+				partsColored.push([
+					object.name,
+					isColor ? "#ffffff" : fillColor,
+				]);
+
+				if (presence) {
+					console.log(partsColored);
+					console.log("sending colors");
+					presence.sendMessage(presence.getSharedInfo().id, {
+						user: presence.getUserInfo(),
+						action: "init",
+						content: [partsColored, players],
+					});
+				}
+
+				if (isColor) {
+					object.material = object.userData.originalMaterial.clone();
+				} else {
+					object.material = new THREE.MeshStandardMaterial({
+						color: fillColor,
+						side: THREE.DoubleSide,
+					});
+				}
+			}
+		}
+
+		// handle the click event for doctor mode checks if the clicked object is the correct body part
+		function handleDoctorMode(object) {
+			if (presence) {
+				const targetMeshName = bodyParts[presenceCorrectIndex].mesh;
+
+				if (object.name === targetMeshName) {
+					if (ifDoctorHost) {
+						firstAnswer = true;
+						let target = players.findIndex(
+							(innerArray) => innerArray[0] === username
+						);
+						console.log("the doctor is in");
+						players[target][1]++;
+						presence.sendMessage(
+							presence.getSharedInfo().id,
+							{
+								user: presence.getUserInfo(),
+								action: "update",
+								content: players,
+							}
+						);
+						showLeaderboard();
+					}
+
+					if (!ifDoctorHost) {
+						presence.sendMessage(
+							presence.getSharedInfo().id,
+							{
+								user: presence.getUserInfo(),
+								action: "answer",
+							}
+						);
+					}
+
+					showModal("Correct! But were you the fastest?");
+					presenceIndex++;
+					setTimeout(startDoctorModePresence, 1500);
+				} else {
+					showModal("Wrong!");
+				}
+			} else {
+				const targetMeshName = bodyParts[currentBodyPartIndex].mesh;
+
+				if (object.name === targetMeshName) {
+					showModal(
+						"Correct! Next: " +
+						bodyParts[++currentBodyPartIndex]?.name
+					);
+				} else {
+					showModal(
+						"Wrong! Try to find " +
+						bodyParts[++currentBodyPartIndex]?.name
+					);
+				}
+
+				if (currentBodyPartIndex >= bodyParts.length) {
+					showModal("Game over! You found all parts.");
+					stopDoctorMode();
+				}
+			}
+		}
+
+		// handle the click event for learn mode
+		function handleLearnMode(object) {
+			let clickedBodyPart = bodyParts.find(
+				(part) => part.mesh === object.name
+			);
+
+			if (clickedBodyPart) {
+				showModal(`You clicked on: ${clickedBodyPart.name}`);
+			}
 		}
 
 		function onMouseClick(event) {
@@ -843,112 +877,11 @@ define([
 				const object = intersects[0].object;
 
 				if (isPaintActive) {
-					if (object.userData.originalMaterial) {
-						const isColor = !object.material.color.equals(
-							new THREE.Color("#ffffff")
-						);
-						// Traverse partsColored array to check if the object with the same name already exists
-						const index = partsColored.findIndex(
-							([name, color]) => name === object.name
-						);
-
-						// If it exists, remove it from the array
-						if (index !== -1) {
-							partsColored.splice(index, 1);
-						}
-
-						// Push the new entry with the updated color
-						partsColored.push([
-							object.name,
-							isColor ? "#ffffff" : fillColor,
-						]);
-
-						if (presence) {
-							console.log(partsColored);
-							console.log("sending colors");
-							presence.sendMessage(presence.getSharedInfo().id, {
-								user: presence.getUserInfo(),
-								action: "init",
-								content: [partsColored, players],
-							});
-						}
-
-						if (isColor) {
-							object.material =
-								object.userData.originalMaterial.clone();
-						} else {
-							object.material = new THREE.MeshStandardMaterial({
-								color: fillColor,
-								side: THREE.DoubleSide,
-							});
-						}
-					}
+					handlePaintMode(object);
 				} else if (isDoctorActive) {
-					if (presence) {
-						const targetMeshName =
-							bodyParts[presenceCorrectIndex].mesh;
-						if (object.name === targetMeshName) {
-							if (ifDoctorHost) {
-								firstAnswer = true;
-								let target = players.findIndex(
-									(innerArray) => innerArray[0] === username
-								);
-                                console.log("the doctor is in")
-								players[target][1]++;
-								presence.sendMessage(
-									presence.getSharedInfo().id,
-									{
-										user: presence.getUserInfo(),
-										action: "update",
-										content: players,
-									}
-								);
-                                // presenceIndex++;
-								// startDoctorModePresence();
-								showLeaderboard();
-							}
-							if (!ifDoctorHost) {
-								presence.sendMessage(
-									presence.getSharedInfo().id,
-									{
-										user: presence.getUserInfo(),
-										action: "answer",
-									}
-								);
-							}
-							showModal("Correct! But were you the fastest?");
-                            presenceIndex++;
-                            setTimeout(startDoctorModePresence, 1500)
-						} else {
-							showModal("Wrong!");
-						}
-					} else {
-						const targetMeshName =
-							bodyParts[currentBodyPartIndex].mesh;
-						if (object.name === targetMeshName) {
-							showModal(
-								"Correct! Next: " +
-									bodyParts[++currentBodyPartIndex]?.name
-							);
-						} else {
-							showModal(
-								"Wrong! Try to find " +
-									bodyParts[++currentBodyPartIndex]?.name
-							);
-						}
-
-						if (currentBodyPartIndex >= bodyParts.length) {
-							showModal("Game over! You found all parts.");
-							stopDoctorMode();
-						}
-					}
+					handleDoctorMode(object);
 				} else if (isLearnActive) {
-					let clickedBodyPart = bodyParts.find(
-						(part) => part.mesh === object.name
-					);
-					if (isLearnActive && clickedBodyPart) {
-						showModal(`You clicked on: ${clickedBodyPart.name}`);
-					}
+					handleLearnMode(object);
 				}
 			}
 		}
