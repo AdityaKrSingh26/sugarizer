@@ -3,6 +3,7 @@ define([
 	"sugar-web/env",
 	"activity/palettes/colorpalettefill",
 	"activity/palettes/zoompalette",
+	"activity/palettes/modelpalette",
 	"activity/palettes/settingspalette",
 	"sugar-web/graphics/presencepalette",
 ], function (
@@ -10,6 +11,7 @@ define([
 	env,
 	colorpaletteFill,
 	zoompalette,
+	modelpalette,
 	settingspalette,
 	presencepalette
 ) {
@@ -37,6 +39,11 @@ define([
 
 		var paletteSettings = new settingspalette.SettingsPalette(
 			document.getElementById("settings-button"),
+			undefined
+		);
+
+		var paletteModel = new modelpalette.ModelPalette(
+			document.getElementById("model-button"),
 			undefined
 		);
 
