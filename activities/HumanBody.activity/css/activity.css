@@ -200,6 +200,18 @@ body {
     background-repeat: no-repeat;
 }
 
+#model-button.skeleton-icon {
+    background-image: url(../icons/model-skeleton.svg);
+}
+
+#model-button.body-icon {
+    background-image: url(../icons/model-body.svg);
+}
+
+#model-button.organs-icon {
+    background-image: url(../icons/model-organs.svg);
+}
+
 #settings-button {
     height: 40px;
     width: 40px;

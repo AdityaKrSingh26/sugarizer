@@ -32,6 +32,33 @@ define([
 		let firstAnswer = true;
 		let numModals = 0;
 
+		// Model state management
+		let currentModel = null;
+
+		// Default model
+		let currentModelName = "skeleton"; 
+
+		const availableModels = {
+			skeleton: {
+				modelPath: "models/skeleton/skeleton.gltf",
+				name: "skeleton",
+				position: { x: 0, y: -6, z: 0 },
+				scale: { x: 4, y: 4, z: 4 }
+			},
+			body: {
+				modelPath: "models/human/human.gltf",
+				name: "human-body",
+				position: { x: 0, y: 2, z: 0 },
+				scale: { x: 1.2, y: 1.2, z: 1.2 }
+			},
+			organs: {
+				modelPath: "models/organs/organs.gltf",
+				name: "organs",
+				position: { x: 0, y: -1, z: 0 },
+				scale: { x: 1, y: 1, z: 1 }
+			}
+		};
+
 		var paletteColorFill = new colorpaletteFill.ColorPalette(
 			document.getElementById("color-button-fill"),
 			undefined
@@ -75,7 +102,10 @@ define([
 					modelPath: "models/skeleton/skeleton.gltf",
 					name: "skeleton",
 					position: { x: 0, y: -6, z: 0 },
-					scale: { x: 4, y: 4, z: 4 }
+					scale: { x: 4, y: 4, z: 4 },
+					callback: (loadedModel) => {
+						currentModel = loadedModel; // Assign to currentModel for tracking
+					}
 				});
 			} else {
 				activity
@@ -87,7 +117,10 @@ define([
 								modelPath: "models/skeleton/skeleton.gltf",
 								name: "skeleton",
 								position: { x: 0, y: -6, z: 0 },
-								scale: { x: 4, y: 4, z: 4 }
+								scale: { x: 4, y: 4, z: 4 },
+								callback: (loadedModel) => {
+									currentModel = loadedModel; // Assign to currentModel for tracking
+								}
 							});
 						}
 					});
@@ -219,6 +252,84 @@ define([
 			);
 		}
 
+		function removeCurrentModel() {
+			if (currentModel) {
+				scene.remove(currentModel);
+
+				// Clean up model resources
+				currentModel.traverse((child) => {
+					if (child.isMesh) {
+						if (child.geometry) {
+							child.geometry.dispose();
+						}
+						if (child.material) {
+							if (Array.isArray(child.material)) {
+								child.material.forEach(material => material.dispose());
+							} else {
+								child.material.dispose();
+							}
+						}
+					}
+				});
+
+				currentModel = null;
+			}
+		}
+
+		function switchModel(modelKey) {
+			if (!availableModels[modelKey]) {
+				console.error(`Model ${modelKey} not found`);
+				return;
+			}
+
+			if (currentModelName === modelKey) {
+				console.log(`Model ${modelKey} is already loaded`);
+				return;
+			}
+
+			// Remove current model
+			removeCurrentModel();
+
+			// Update current model name
+			currentModelName = modelKey;
+
+			// Update toolbar icon
+			const modelButton = document.getElementById('model-button');
+			modelButton.classList.remove('skeleton-icon', 'body-icon', 'organs-icon');
+			modelButton.classList.add(`${modelKey}-icon`);
+
+			// Load new model
+			const modelConfig = availableModels[modelKey];
+			loadModel({
+				...modelConfig,
+				callback: (loadedModel) => {
+					currentModel = loadedModel;
+					console.log(`Successfully loaded ${modelKey} model`);
+
+					// Update body parts data based on model
+					// updateBodyPartsForModel(modelKey);
+
+					// Sync with network if available
+					if (presence) {
+						presence.sendMessage(presence.getSharedInfo().id, {
+							user: presence.getUserInfo(),
+							action: "modelSwitch",
+							content: {
+								modelKey: modelKey,
+								partsColored: partsColored
+							}
+						});
+					}
+				}
+			});
+		}
+
+		document.addEventListener('model-selected', function (event) {
+			const selectedModel = event.detail.model;
+			console.log('Model selected:', selectedModel);
+			switchModel(selectedModel);
+		});
+
 		// Link presence palette
 		var presence = null;
 		var palette = new presencepalette.PresencePalette(
@@ -258,7 +369,10 @@ define([
 					modelPath: "models/skeleton/skeleton.gltf",
 					name: "skeleton",
 					position: { x: 0, y: -6, z: 0 },
-					scale: { x: 4, y: 4, z: 4 }
+					scale: { x: 4, y: 4, z: 4 },
+					callback: (loadedModel) => {
+						currentModel = loadedModel; // Assign to currentModel for tracking
+					}
 				});
 			}
 
@@ -705,7 +819,7 @@ define([
 		const canvas = document.getElementById("canvas");
 		canvas.appendChild(renderer.domElement);
 		const scene = new THREE.Scene();
-		scene.background = new THREE.Color("#000000");
+		scene.background = new THREE.Color("#1a1a1a");
 
 		// Restore all lights
 		const light = new THREE.DirectionalLight(0xffffff, 1);
@@ -748,12 +862,7 @@ define([
 		let skeleton;
 
 		if (presence == null) {
-			loadModel({
-				modelPath: "models/skeleton/skeleton.gltf",
-				name: "skeleton",
-				position: { x: 0, y: -6, z: 0 },
-				scale: { x: 4, y: 4, z: 4 }
-			});
+			switchModel('skeleton');
 		}
 
 		function setModelColor(model, color) {
@@ -769,16 +878,12 @@ define([
 		const raycaster = new THREE.Raycaster();
 		const mouse = new THREE.Vector2();
 
-		function setupRaycaster() {
-			raycaster.near = camera.near;
-			raycaster.far = camera.far;
+		raycaster.near = camera.near;
+		raycaster.far = camera.far;
 
-			// Set raycaster parameters for better intersection detection
-			raycaster.params.Points.threshold = 0.1;
-			raycaster.params.Line.threshold = 0.1;
-		}
-
-		setupRaycaster();
+		// Set raycaster parameters for better intersection detection
+		raycaster.params.Points.threshold = 0.1;
+		raycaster.params.Line.threshold = 0.1;
 
 		function handleIntersection(intersect) {
 			const point = intersect.point;
