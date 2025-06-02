@@ -158,7 +158,7 @@ define([
 					const model = gltf.scene;
 					model.name = name;
 
-					// Apply transformations
+					// Apply position
 					model.position.set(position.x, position.y, position.z);
 					model.scale.set(scale.x, scale.y, scale.z);
 
@@ -305,21 +305,6 @@ define([
 				callback: (loadedModel) => {
 					currentModel = loadedModel;
 					console.log(`Successfully loaded ${modelKey} model`);
-
-					// Update body parts data based on model
-					// updateBodyPartsForModel(modelKey);
-
-					// Sync with network if available
-					if (presence) {
-						presence.sendMessage(presence.getSharedInfo().id, {
-							user: presence.getUserInfo(),
-							action: "modelSwitch",
-							content: {
-								modelKey: modelKey,
-								partsColored: partsColored
-							}
-						});
-					}
 				}
 			});
 		}
@@ -1034,7 +1019,7 @@ define([
 			}
 		}
 
-		// Alternative click handler that uses screen-space testing
+		// click handler that uses screen-space testing
 		function onMouseClick(event) {
 			const rect = renderer.domElement.getBoundingClientRect();
 			const x = event.clientX - rect.left;
