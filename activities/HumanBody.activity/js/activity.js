@@ -6,6 +6,7 @@ define([
 	"activity/palettes/modelpalette",
 	"activity/palettes/settingspalette",
 	"sugar-web/graphics/presencepalette",
+	"l10n",
 ], function (
 	activity,
 	env,
@@ -13,7 +14,8 @@ define([
 	zoompalette,
 	modelpalette,
 	settingspalette,
-	presencepalette
+	presencepalette,
+	l10n,
 ) {
 	requirejs(["domReady!"], function (doc) {
 		activity.setup();
@@ -93,6 +95,21 @@ define([
 		let currentenv;
 		env.getEnvironment(function (err, environment) {
 			currentenv = environment;
+
+			// Set current language to Sugarizer
+			var defaultLanguage = 
+						(typeof chrome != 'undefined' && chrome.app && chrome.app.runtime) 
+						? chrome.i18n.getUILanguage() 
+						: navigator.language;
+			var language = environment.user ? environment.user.language : defaultLanguage;
+			l10n.init(language);
+
+			// Process localize event
+			window.addEventListener("localized", function () {
+				// Update mode text based on current mode
+				updateModeText();
+			}, false);
+
 			username = environment.user.name;
 
 			// Load from datastore
@@ -461,7 +478,7 @@ define([
 				camera.updateProjectionMatrix();
 
 				// Display the name of the part using the modal
-				showModal(`This is the ${part.name}`);
+				showModal(l10n.get("ThisIsThe", { name: part.name }));
 
 				tourIndex++;
 
@@ -490,7 +507,8 @@ define([
 				stopDoctorMode();
 			}
 
-			modeTextElem.textContent = modes[currentModeIndex];
+			const modeKey = modes[currentModeIndex];
+			modeTextElem.textContent = l10n.get(modeKey);
 
 			// Update mode tracking variables
 			isPaintActive = currentModeIndex === 0;
@@ -660,7 +678,7 @@ define([
 		function startDoctorMode() {
 			currentBodyPartIndex = 0;
 			if (bodyParts[currentBodyPartIndex]) {
-				showModal("Find the " + bodyParts[currentBodyPartIndex].name);
+				showModal(l10n.get("FindThe", { name: bodyParts[currentBodyPartIndex].name }));
 			}
 		}
 
@@ -672,9 +690,9 @@ define([
 			});
 			presenceCorrectIndex = presenceIndex;
 			if (bodyParts[presenceIndex]) {
-				showModal("Find the " + bodyParts[presenceIndex].name);
+				showModal(l10n.get("FindThe", { name: bodyParts[presenceIndex].name }));
 			} else {
-				showModal("Game Over");
+				showModal(l10n.get("GameOverAll"));
 			}
 		}
 
@@ -724,8 +742,10 @@ define([
 
 			// Make the modal disappear after 1.5 seconds
 			setTimeout(() => {
-				document.body.removeChild(modal);
+				if (modal && modal.parentNode === document.body) {
+					document.body.removeChild(modal);
 					numModals--;
+				}
 			}, 1500);
 		}
 
@@ -980,29 +1000,31 @@ define([
 						);
 					}
 
-					showModal("Correct! But were you the fastest?");
+					showModal(l10n.get("CorrectButFastest"));
 					presenceIndex++;
 					setTimeout(startDoctorModePresence, 1500);
 				} else {
-					showModal("Wrong!");
+					showModal(l10n.get("Wrong"));
 				}
 			} else {
 				const targetMeshName = bodyParts[currentBodyPartIndex].mesh;
 
 				if (object.name === targetMeshName) {
 					showModal(
-						"Correct! Next: " +
-						bodyParts[++currentBodyPartIndex]?.name
+						l10n.get("Correct") + " " +
+						(bodyParts[++currentBodyPartIndex] ?
+							l10n.get("NextPart", { name: bodyParts[currentBodyPartIndex].name }) : "")
 					);
 				} else {
 					showModal(
-						"Wrong! Try to find " +
-						bodyParts[++currentBodyPartIndex]?.name
+						bodyParts[++currentBodyPartIndex]?
+							l10n.get("TryToFind", { name: bodyParts[currentBodyPartIndex].name }) :
+							""
 					);
 				}
 
 				if (currentBodyPartIndex >= bodyParts.length) {
-					showModal("Game over! You found all parts.");
+					showModal(l10n.get("GameOver"));
 					stopDoctorMode();
 				}
 			}
@@ -1015,7 +1037,7 @@ define([
 			);
 
 			if (clickedBodyPart) {
-				showModal(`You clicked on: ${clickedBodyPart.name}`);
+				showModal(l10n.get("YouClickedOn", { name: clickedBodyPart.name }));
 			}
 		}
 
