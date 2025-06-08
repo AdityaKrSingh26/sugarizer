@@ -116,10 +116,7 @@ define([
 			if (!environment.objectId) {
 				console.log("New instance");
 				loadModel({
-					modelPath: "models/skeleton/skeleton.gltf",
-					name: "skeleton",
-					position: { x: 0, y: -6, z: 0 },
-					scale: { x: 4, y: 4, z: 4 },
+					...availableModels.skeleton,
 					callback: (loadedModel) => {
 						currentModel = loadedModel; // Assign to currentModel for tracking
 					}
@@ -131,10 +128,7 @@ define([
 						if (error == null && data != null) {
 							partsColored = JSON.parse(data);
 							loadModel({
-								modelPath: "models/skeleton/skeleton.gltf",
-								name: "skeleton",
-								position: { x: 0, y: -6, z: 0 },
-								scale: { x: 4, y: 4, z: 4 },
+								...availableModels.skeleton,
 								callback: (loadedModel) => {
 									currentModel = loadedModel; // Assign to currentModel for tracking
 								}
@@ -332,6 +326,13 @@ define([
 			switchModel(selectedModel);
 		});
 
+		document.addEventListener('mode-selected', function (event) {
+			const selectedMode = event.detail.mode;
+			console.log('Mode selected:', selectedMode);
+			currentModeIndex = selectedMode;
+			updateModeText();
+		});
+
 		// Link presence palette
 		var presence = null;
 		var palette = new presencepalette.PresencePalette(
@@ -368,10 +369,7 @@ define([
 				console.log(partsColored);
 				// Load the skeleton model
 				loadModel({
-					modelPath: "models/skeleton/skeleton.gltf",
-					name: "skeleton",
-					position: { x: 0, y: -6, z: 0 },
-					scale: { x: 4, y: 4, z: 4 },
+					...availableModels.skeleton,
 					callback: (loadedModel) => {
 						currentModel = loadedModel; // Assign to currentModel for tracking
 					}
@@ -508,7 +506,11 @@ define([
 			}
 
 			const modeKey = modes[currentModeIndex];
-			modeTextElem.textContent = l10n.get(modeKey);
+
+			// Check if modeTextElem exists before setting textContent
+			if (modeTextElem) {
+				modeTextElem.textContent = l10n.get(modeKey);
+			}
 
 			// Update mode tracking variables
 			isPaintActive = currentModeIndex === 0;
@@ -565,19 +567,6 @@ define([
 				scoreCell.textContent = playerScore;
 			}
 		}
-
-		// Event listener to switch to the previous mode
-		leftArrow.addEventListener("click", () => {
-			currentModeIndex =
-				(currentModeIndex - 1 + modes.length) % modes.length;
-			updateModeText();
-		});
-
-		// Event listener to switch to the next mode
-		rightArrow.addEventListener("click", () => {
-			currentModeIndex = (currentModeIndex + 1) % modes.length;
-			updateModeText();
-		});
 
 		// Initialize the mode text
 		updateModeText();

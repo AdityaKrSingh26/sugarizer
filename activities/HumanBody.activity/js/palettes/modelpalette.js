@@ -27,8 +27,20 @@ define([
 			var bodyButton = document.getElementById('model-body-button');
 			var organsButton = document.getElementById('model-organs-button');
 
+			var buttons = [skeletonButton, bodyButton, organsButton];
+
+			function setActiveButton(activeButton) {
+				buttons.forEach(function (btn) {
+					if (btn) btn.classList.remove('active');
+				});
+				if (activeButton) activeButton.classList.add('active');
+			}
+			// Set the first button as active by default
+			setActiveButton(skeletonButton);
+
 			if (skeletonButton) {
 				skeletonButton.addEventListener('click', function () {
+					setActiveButton(skeletonButton);
 					self.fireEvent('model-selected', { model: 'skeleton' });
 					self.popDown();
 				});
@@ -36,6 +48,7 @@ define([
 
 			if (bodyButton) {
 				bodyButton.addEventListener('click', function () {
+					setActiveButton(bodyButton);
 					self.fireEvent('model-selected', { model: 'body' });
 					self.popDown();
 				});
@@ -43,6 +56,7 @@ define([
 
 			if (organsButton) {
 				organsButton.addEventListener('click', function () {
+					setActiveButton(organsButton);
 					self.fireEvent('model-selected', { model: 'organs' });
 					self.popDown();
 				});
