@@ -902,6 +902,60 @@ define([
 			if (intersects.length > 0) console.log(intersects[0].point);
 		}
 
+		function showPaintModal(bodyPartName) {
+			// Check if a paint modal is already displayed and remove it
+			let existingPaintModal = document.querySelector('.paint-modal');
+			if (existingPaintModal) {
+				existingPaintModal.remove();
+			}
+
+			const paintModal = document.createElement("div");
+			paintModal.className = "paint-modal";
+
+			// Style the modal for bottom right corner
+			paintModal.style.position = "fixed";
+			paintModal.style.bottom = "20px";
+			paintModal.style.right = "20px";
+			paintModal.style.backgroundColor = "#2c3e50"; // Dark blue-grey background
+			paintModal.style.color = "#ffffff"; // White text
+			paintModal.style.padding = "12px 16px"; // Compact padding
+			paintModal.style.border = "2px solid #3498db"; // Blue border
+			paintModal.style.borderRadius = "8px"; // Rounded corners
+			paintModal.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.3)"; // Shadow for depth
+			paintModal.style.zIndex = "1001"; // Higher than other modals
+			paintModal.style.fontSize = "14px"; // Smaller, readable text
+			paintModal.style.fontWeight = "600"; // Semi-bold text
+			paintModal.style.maxWidth = "200px"; // Limit width
+			paintModal.style.textAlign = "center";
+			paintModal.style.opacity = "0"; // Start invisible for fade-in effect
+			paintModal.style.transform = "translateY(10px)"; // Start slightly below
+			paintModal.style.transition = "all 0.3s ease"; // Smooth animation
+
+			paintModal.innerHTML = `Painted: ${bodyPartName}`;
+			document.body.appendChild(paintModal);
+
+			// Trigger fade-in animation
+			setTimeout(() => {
+				paintModal.style.opacity = "1";
+				paintModal.style.transform = "translateY(0)";
+			}, 10);
+
+			// Make the modal disappear after 2 seconds with fade-out
+			setTimeout(() => {
+				if (paintModal && paintModal.parentNode === document.body) {
+					paintModal.style.opacity = "0";
+					paintModal.style.transform = "translateY(10px)";
+					
+					// Remove after animation completes
+					setTimeout(() => {
+						if (paintModal && paintModal.parentNode === document.body) {
+							document.body.removeChild(paintModal);
+						}
+					}, 300);
+				}
+			}, 2000);
+		}
+
 		// handle the click event for painting
 		function handlePaintMode(object) {
 
@@ -913,6 +967,11 @@ define([
 			// Check current color
 			const currentColor = object.material.color;
 			const isDefaultColor = currentColor.equals(new THREE.Color("#ffffff")) || currentColor.equals(object.userData.originalMaterial.color);
+
+			// Find the body part name for the modal
+			let clickedBodyPart = bodyParts.find((part) => part.mesh === object.name);
+			let bodyPartName = clickedBodyPart ? clickedBodyPart.name : object.name;
+			showPaintModal(bodyPartName);
 
 			// Update partsColored array
 			const index = partsColored.findIndex(([name, color]) => name === object.name);
