@@ -218,11 +218,11 @@ body {
 }
 
 #settings-button {
-    height: 40px;
-    width: 40px;
+    height: 45px;
+    width: 45px;
     background-size: cover;
     background-repeat: no-repeat;
-    background-image: url(../icons/settings.svg);
+    background-image: url(../icons/mode-paint.svg);
     outline: none;
 }
 
@@ -293,12 +293,12 @@ body {
 
 .settings-button.active {
     background-color: #808080;
-    border-radius: 5px;
+    /* border-radius: 5px; */
 }
 
 .settings-button:hover {
     background-color: #808080;
-    border-radius: 5px;
+    /* border-radius: 5px; */
 }
 
 .settings-button img {

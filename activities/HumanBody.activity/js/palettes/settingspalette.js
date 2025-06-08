@@ -14,7 +14,6 @@ define([
 		var self = this;
 		setTimeout(function () {
 			var paintButton = self.getPalette().querySelector("#paint-button");
-			var learnButton = self.getPalette().querySelector("#learn-button");
 			var tourButton = self.getPalette().querySelector("#tour-button");
 			var doctorButton = self.getPalette().querySelector("#doctor-button");
 			var settingsButton = document.getElementById("settings-button");
@@ -34,6 +33,14 @@ define([
 				if (activeButton) activeButton.classList.add('active');
 			}
 
+			// Set paint mode as default active mode
+			updateSettingsIcon('paint');
+			setActiveButton(paintButton);
+			// Dispatch mode-selected event for paint mode
+			document.dispatchEvent(new CustomEvent('mode-selected', { 
+				detail: { mode: 0 } 
+			}));
+
 			if (paintButton) {
 				paintButton.addEventListener("click", function () {
 					document.dispatchEvent(new CustomEvent('mode-selected', 
@@ -44,15 +51,6 @@ define([
 					self.popDown();
 				});
 			}
-
-			// if (learnButton) {
-			// 	learnButton.addEventListener("click", function () {
-			// 		document.dispatchEvent(new CustomEvent('mode-selected', 
-			// 			{ detail: { mode: 1 } }
-			// 		));
-			// 		self.popDown();
-			// 	});
-			// }
 
 			if (tourButton) {
 				tourButton.addEventListener("click", function () {
