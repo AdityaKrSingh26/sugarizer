@@ -164,6 +164,11 @@ body {
     outline: none;
 }
 
+.model-palette .toolbutton.active {
+    background-color: #808080;
+    border-radius: 5px;
+}
+
 #model-button {
     height: 45px;
     width: 45xpx;
@@ -265,6 +270,35 @@ body {
     height: 100%;
     box-sizing: border-box;
     padding: 10px;
+}
+
+.settings-palette{
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+.settings-button{
+    all : unset;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 24px;
+    width: calc(100% - 40px); /* Adjust width accounting for padding */
+}
+
+.settings-button:hover {
+    background-color: #808080;
+    border-radius: 5px;
+}
+
+.settings-button img {
+    width: 40px;
+    height: 40px;
 }
 
 #left-arrow,
