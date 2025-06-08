@@ -291,6 +291,11 @@ body {
     width: calc(100% - 40px); /* Adjust width accounting for padding */
 }
 
+.settings-button.active {
+    background-color: #808080;
+    border-radius: 5px;
+}
+
 .settings-button:hover {
     background-color: #808080;
     border-radius: 5px;

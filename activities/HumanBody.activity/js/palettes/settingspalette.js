@@ -17,12 +17,30 @@ define([
 			var learnButton = self.getPalette().querySelector("#learn-button");
 			var tourButton = self.getPalette().querySelector("#tour-button");
 			var doctorButton = self.getPalette().querySelector("#doctor-button");
+			var settingsButton = document.getElementById("settings-button");
+
+			var allButtons = [paintButton, tourButton, doctorButton];
+
+			function updateSettingsIcon(iconName) {
+				settingsButton.style.backgroundImage = `url(icons/mode-${iconName}.svg)`;
+			}
+
+			function setActiveButton(activeButton) {
+				// Remove active class from all buttons
+				allButtons.forEach(button => {
+					if (button) button.classList.remove('active');
+				});
+				// Add active class to clicked button
+				if (activeButton) activeButton.classList.add('active');
+			}
 
 			if (paintButton) {
 				paintButton.addEventListener("click", function () {
 					document.dispatchEvent(new CustomEvent('mode-selected', 
 						{ detail: { mode: 0 } }
 					));
+					updateSettingsIcon('paint');
+					setActiveButton(paintButton);
 					self.popDown();
 				});
 			}
@@ -41,6 +59,8 @@ define([
 					document.dispatchEvent(new CustomEvent('mode-selected', 
 						{ detail: { mode: 2 } }
 					));
+					 updateSettingsIcon('compass');
+					 setActiveButton(tourButton);
 					self.popDown();
 				});
 			}
@@ -50,6 +70,8 @@ define([
 					document.dispatchEvent(new CustomEvent('mode-selected', 
 						{ detail: { mode: 3 } }
 					));
+					updateSettingsIcon('doctor');
+					setActiveButton(doctorButton);
 					self.popDown();
 				});
 			}
