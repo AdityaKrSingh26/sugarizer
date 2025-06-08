@@ -328,7 +328,6 @@ define([
 
 		document.addEventListener('mode-selected', function (event) {
 			const selectedMode = event.detail.mode;
-			console.log('Mode selected:', selectedMode);
 			currentModeIndex = selectedMode;
 			updateModeText();
 		});
@@ -444,12 +443,11 @@ define([
 
 		// Mode variables to track which mode is active
 		let isPaintActive = true;
-		let isLearnActive = false;
 		let isTourActive = false;
 		let isDoctorActive = false;
 
 		// Array of modes
-		const modes = ["Paint", "Learn", "Tour", "Doctor"];
+		const modes = ["Paint", "Tour", "Doctor"];
 		let currentModeIndex = 0;
 
 		// DOM elements
@@ -514,7 +512,6 @@ define([
 
 			// Update mode tracking variables
 			isPaintActive = currentModeIndex === 0;
-			isLearnActive = currentModeIndex === 1;
 			isTourActive = currentModeIndex === 2;
 			isDoctorActive = currentModeIndex === 3;
 
@@ -887,8 +884,6 @@ define([
 				handlePaintMode(clickedObject);
 			} else if (isDoctorActive) {
 				handleDoctorMode(clickedObject);
-			} else if (isLearnActive) {
-				handleLearnMode(clickedObject);
 			}
 		}
 
@@ -1019,17 +1014,6 @@ define([
 			}
 		}
 
-		// handle the click event for learn mode
-		function handleLearnMode(object) {
-			let clickedBodyPart = bodyParts.find(
-				(part) => part.mesh === object.name
-			);
-
-			if (clickedBodyPart) {
-				showModal(l10n.get("YouClickedOn", { name: clickedBodyPart.name }));
-			}
-		}
-
 		// click handler that uses screen-space testing
 		function onMouseClick(event) {
 			const rect = renderer.domElement.getBoundingClientRect();
@@ -1095,8 +1079,6 @@ define([
 					handlePaintMode(closestMesh);
 				} else if (isDoctorActive) {
 					handleDoctorMode(closestMesh);
-				} else if (isLearnActive) {
-					handleLearnMode(closestMesh);
 				}
 			} else {
 				console.log("No mesh found close to ray");
