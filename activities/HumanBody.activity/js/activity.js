@@ -458,9 +458,14 @@ define([
 		// Function to handle entering Tour mode
 		function startTourMode() {
 			let tourIndex = 0; // Start with the first body part in the list
+			let previousMesh = null;
 
 			function tourNextPart() {
 				if (tourIndex >= bodyParts.length || !isTourActive) {
+					// Restore previous mesh color before stopping
+					if (previousMesh) {
+						previousMesh.material = previousMesh.userData.originalMaterial.clone();
+					}
 					stopTourMode(); // Stop the tour if all parts have been shown
 					return;
 				}
@@ -468,13 +473,43 @@ define([
 				const part = bodyParts[tourIndex];
 				const position = part.position; // Retrieve the position of the body part
 
+				// Find the mesh for the current body part
+				const currentMesh = currentModel.getObjectByName(part.mesh);
+
+				// Restore previous mesh color
+				if (previousMesh) {
+					previousMesh.material = previousMesh.userData.originalMaterial.clone();
+				}
+
+				// Highlight current mesh
+				if (currentMesh) {
+					// Store original material if not already stored
+					if (!currentMesh.userData.originalMaterial) {
+						currentMesh.userData.originalMaterial = currentMesh.material.clone();
+					}
+
+					// Apply highlight color
+					currentMesh.material = new THREE.MeshStandardMaterial({
+						color: new THREE.Color("#ffff00"), // Yellow highlight
+						side: THREE.DoubleSide,
+						transparent: true,
+						opacity: 0.8,
+						depthTest: true,
+						depthWrite: true,
+						emissive: new THREE.Color("#ffff00"),
+						emissiveIntensity: 0.2
+					});
+
+					previousMesh = currentMesh;
+				}
+
 				// Zoom to the body part's position
 				camera.position.set(position[0], position[1], position[2] + 5); // Adjust the zoom offset as necessary
 				camera.lookAt(position[0], position[1], position[2]);
 				camera.updateProjectionMatrix();
 
 				// Display the name of the part using the modal
-				showModal(l10n.get("ThisIsThe", { name: part.name }));
+				showModal(part.name);
 
 				tourIndex++;
 
@@ -925,13 +960,21 @@ define([
 			paintModal.style.zIndex = "1001"; // Higher than other modals
 			paintModal.style.fontSize = "14px"; // Smaller, readable text
 			paintModal.style.fontWeight = "600"; // Semi-bold text
-			paintModal.style.maxWidth = "200px"; // Limit width
+			paintModal.style.width = "200px"; // Limit width
+			paintModal.style.minHeight = "20px"; // Add minimum height
+			paintModal.style.maxHeight = "80px"; // Add maximum height
+			paintModal.style.wordWrap = "break-word"; // Wrap long words
+			paintModal.style.whiteSpace = "normal"; // Allow text wrapping
+			paintModal.style.overflowWrap = "break-word"; // Break long words if needed
 			paintModal.style.textAlign = "center";
+			paintModal.style.display = "flex"; // Use flexbox for better text centering
+			paintModal.style.alignItems = "center"; // Center text vertically
+			paintModal.style.justifyContent = "center"; // Center text horizontally
 			paintModal.style.opacity = "0"; // Start invisible for fade-in effect
 			paintModal.style.transform = "translateY(10px)"; // Start slightly below
 			paintModal.style.transition = "all 0.3s ease"; // Smooth animation
 
-			paintModal.innerHTML = `Painted: ${bodyPartName}`;
+			paintModal.innerHTML = `${bodyPartName}`;
 			document.body.appendChild(paintModal);
 
 			// Trigger fade-in animation
