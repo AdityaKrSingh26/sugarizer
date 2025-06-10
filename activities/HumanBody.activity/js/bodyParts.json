@@ -1,92 +1,24 @@
 [
-	{ 
-		"name": "Head", 
-		"mesh": "SK_Head_Material001mat_0", 
-		"position": [-0.04, 7.80, 0.56] 
-	},
-	{ 
-		"name": "Ribcage", 
-		"mesh": "SK_Side_Material001mat_0", 
-		"position": [-0.06, 5.16, 0.48] 
-	},
-	{ 
-		"name": "Right Arm Down", 
-		"mesh": "SK_RArmDown_Material001mat_0", 
-		"position": [-2.22, 2.65, -0.12] 
-	},
-	{ 
-		"name": "Right Arm Up", 
-		"mesh": "SK_RArmUp_Material001mat_0", 
-		"position": [-1.46, 4.79, -0.44] 
-	},
-	{ 
-		"name": "Right Hand", 
-		"mesh": "SK_HandR_Material001mat_0", 
-		"position": [-2.38, 1.35, 0.15] 
-	},
-	{ 
-		"name": "Left Arm Down", 
-		"mesh": "SK_LArmDown_Material001mat_0", 
-		"position": [2.11, 2.70, -0.35] 
-	},
-	{ 
-		"name": "Left Humerus", 
-		"mesh": "SK_LArmUp_Material001mat_0", 
-		"position": [1.43, 4.85, -0.43] 
-	},
-	{ 
-		"name": "Left Hand", 
-		"mesh": "SK_HandL_Material001mat_0", 
-		"position": [2.36, 1.12, -0.20] 
-	},
-	{ 
-		"name": "Right Leg Up", 
-		"mesh": "SK_RLegUp_Material001mat_0", 
-		"position": [-0.86, 0.26, 0.09] 
-	},
-	{ 
-		"name": "Right Leg Down", 
-		"mesh": "SK_RLegDown_Material001mat_0", 
-		"position": [-0.54, -2.93, -0.12] 
-	},
-	{ 
-		"name": "Left Leg Up", 
-		"mesh": "SK_LLegUp_Material001mat_0", 
-		"position": [0.92, 0.33, 0.08] 
-	},
-	{ 
-		"name": "Left Leg Down", 
-		"mesh": "SK_LLegDown_Material001mat_0", 
-		"position": [0.43, -2.95, -0.15]
-	},
-	{ 
-		"name": "Right Foot", 
-		"mesh": "SK_RFoot_Material001mat_0", 
-		"position": [-0.73, -4.97, 0.24] 
-	},
-	{ 
-		"name": "Left Foot", 
-		"mesh": "SK_LFoot_Material001mat_0", 
-		"position": [0.55, -4.87, 0.25] 
-	},
-	{ 
-		"name": "Coccyx", 
-		"mesh": "SK_Coccyx_Material001mat_0", 
-		"position": [-0.05, 2.03, -0.59] 
-	},
-	{ 
-		"name": "Spine", 
-		"mesh": "SK_Spine_Material001mat_0", 
-		"position": [-0.11, 3.05, -0.08] 
-	},
-	{ 
-		"name": "Right Clavicle", 
-		"mesh": "SK_RClavicle_Material001mat_0", 
-		"position": [-0.87, 5.88, -0.60] 
-	},
-	{ 
-		"name": "Left Clavicle", 
-		"mesh": "SK_LClavicle_Material001mat_0", 
-		"position": [0.84, 5.87, -0.64] 
-	}
+	{ "name": "Skull", "mesh": "Head002", "position": [0, 6.24, 0.17] },
+	{ "name": "Spine", "mesh": "Spine002", "position": [0, 4.08, -0.37] },
+	{ "name": "Pelvic Girdle", "mesh": "Coccyx002", "position": [0, 1.08, -0.28] },
+	{ "name": "Left Femur", "mesh": "FemurL002", "position": [0.73, -0.86, -0.19] },
+	{ "name": "Right Femur", "mesh": "FemurR002", "position": [-0.72, -0.84, -0.19] },
+	{ "name": "Left Fibula", "mesh": "FibulaL", "position": [0.54, -3.86, -0.3] },
+	{ "name": "Right Fibula", "mesh": "FibulaR", "position": [-0.53, -3.86, -0.3] },
+	{ "name": "Left Hand", "mesh": "HandL002", "position": [2.36, 0.27, 0.02] },
+	{ "name": "Right Hand", "mesh": "HandR002", "position": [-2.36, 0.27, 0.02] },
+	{ "name": "Right Humerus", "mesh": "HumerusR002", "position": [-1.47, 3.73, -0.48] },
+	{ "name": "Left Humerus", "mesh": "HumerusR004", "position": [1.47, 3.73, -0.48] },
+	{ "name": "Left Clavicle", "mesh": "LClavicle002", "position": [0.85, 4.78, -0.55] },
+	{ "name": "Left Foot", "mesh": "LFoot002", "position": [0.61, -5.96, 0.18] },
+	{ "name": "Left Radius", "mesh": "RadiusL", "position": [2.05, 1.87, -0.32] },
+	{ "name": "Right Radius", "mesh": "RadiusR", "position": [-2.07, 1.8, -0.29] },
+	{ "name": "Right Clavicle", "mesh": "RClavicle002", "position": [-0.85, 4.78, -0.55] },
+	{ "name": "Right Foot", "mesh": "RFoot002", "position": [-0.61, -5.97, 0.18] },
+	{ "name": "Ribcage", "mesh": "Ribcage002", "position": [-0.01, 3.88, -0.16] },
+	{ "name": "Left Tibia", "mesh": "TibiaL", "position": [0.54, -3.86, -0.3] },
+	{ "name": "Right Tibia", "mesh": "TibiaR", "position": [-0.53, -3.86, -0.3] },
+	{ "name": "Left Ulna", "mesh": "UlnaL", "position": [2.05, 1.87, -0.32] },
+	{ "name": "Right Ulna", "mesh": "UlnaR", "position": [-2.07, 1.8, -0.29] }
 ]
