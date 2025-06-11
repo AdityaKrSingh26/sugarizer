@@ -38,7 +38,7 @@ define([
 		let currentModel = null;
 
 		// Default model
-		let currentModelName = "skeleton"; 
+		let currentModelName = "body"; 
 
 		const availableModels = {
 			skeleton: {
@@ -115,8 +115,9 @@ define([
 			// Load from datastore
 			if (!environment.objectId) {
 				console.log("New instance");
+				currentModelName = "body";
 				loadModel({
-					...availableModels.skeleton,
+					...availableModels.body,
 					callback: (loadedModel) => {
 						currentModel = loadedModel; // Assign to currentModel for tracking
 					}
@@ -127,8 +128,9 @@ define([
 					.loadAsText(function (error, metadata, data) {
 						if (error == null && data != null) {
 							partsColored = JSON.parse(data);
+							currentModelName = "body";
 							loadModel({
-								...availableModels.skeleton,
+								...availableModels.body,
 								callback: (loadedModel) => {
 									currentModel = loadedModel; // Assign to currentModel for tracking
 								}
@@ -366,9 +368,10 @@ define([
 				partsColored = msg.content[0];
 				players = msg.content[1];
 				console.log(partsColored);
-				// Load the skeleton model
+				// Load the human body model
+				currentModelName = "body";
 				loadModel({
-					...availableModels.skeleton,
+					...availableModels.body,
 					callback: (loadedModel) => {
 						currentModel = loadedModel; // Assign to currentModel for tracking
 					}
@@ -378,7 +381,7 @@ define([
 			if (msg.action == "nextQuestion") {
 				if (bodyParts[msg.content]) {
 					presenceCorrectIndex = msg.content;
-					showModal("Find the " + bodyParts[msg.content].name);
+					showModal(l10n.get("FindThe", { name: l10n.get(bodyParts[currentBodyPartIndex].name) }));
 				}
 			}
 
@@ -509,7 +512,7 @@ define([
 				camera.updateProjectionMatrix();
 
 				// Display the name of the part using the modal
-				showModal(part.name);
+				showModal(l10n.get(part.name));
 
 				tourIndex++;
 
@@ -662,7 +665,7 @@ define([
 
 
 		const clickZoom = (value, zoomType) => {
-			if (value >= 20 && zoomType === "zoomIn") {
+			if (value >= 5 && zoomType === "zoomIn") {
 				return value - 5;
 			} else if (value <= 75 && zoomType === "zoomOut") {
 				return value + 5;
@@ -888,7 +891,7 @@ define([
 		let skeleton;
 
 		if (presence == null) {
-			switchModel('skeleton');
+			switchModel('body');
 		}
 
 		function setModelColor(model, color) {
@@ -974,7 +977,7 @@ define([
 			paintModal.style.transform = "translateY(10px)"; // Start slightly below
 			paintModal.style.transition = "all 0.3s ease"; // Smooth animation
 
-			paintModal.innerHTML = `${bodyPartName}`;
+			paintModal.innerHTML = l10n.get(bodyPartName);
 			document.body.appendChild(paintModal);
 
 			// Trigger fade-in animation

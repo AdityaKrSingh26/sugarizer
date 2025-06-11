@@ -36,7 +36,7 @@ define([
 				if (activeButton) activeButton.classList.add('active');
 			}
 			// Set the first button as active by default
-			setActiveButton(skeletonButton);
+			setActiveButton(bodyButton);
 
 			if (skeletonButton) {
 				skeletonButton.addEventListener('click', function () {
