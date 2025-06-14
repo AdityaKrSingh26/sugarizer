@@ -22,7 +22,6 @@ define([
 		let fillColor = null;
 		let doctorMode = false;
 		let currentBodyPartIndex = 0;
-		let bodyParts = [];
 		let modal = null;
 		let partsColored = [];
 		let username = null;
@@ -33,6 +32,13 @@ define([
 		let ifDoctorHost = false;
 		let firstAnswer = true;
 		let numModals = 0;
+
+		// Body parts data for different models
+		let bodyPartsData = {
+			skeleton: [],
+			body: [],
+			organs: []
+		};
 
 		// Model state management
 		let currentModel = null;
@@ -80,7 +86,14 @@ define([
 			.getElementById("stop-button")
 			.addEventListener("click", function (event) {
 				console.log("writing...");
-				var jsonData = JSON.stringify(partsColored);
+
+				// Save both model name and parts colored data
+				const saveData = {
+					modelName: currentModelName,
+					partsColored: partsColored
+				};
+
+				var jsonData = JSON.stringify(saveData);
 				activity.getDatastoreObject().setDataAsText(jsonData);
 				activity.getDatastoreObject().save(function (error) {
 					if (error === null) {
@@ -127,12 +140,34 @@ define([
 					.getDatastoreObject()
 					.loadAsText(function (error, metadata, data) {
 						if (error == null && data != null) {
-							partsColored = JSON.parse(data);
+							const savedData = JSON.parse(data);
+
+							// Check if saved data includes model information
+							if (savedData.modelName && availableModels[savedData.modelName]) {
+								currentModelName = savedData.modelName;
+								partsColored = savedData.partsColored || [];
+							} else {
+								// Legacy format - assume it's just partsColored array
+								partsColored = savedData;
+								currentModelName = "body";
+							}
+
+							loadModel({
+								...availableModels[currentModelName],
+								callback: (loadedModel) => {
+									currentModel = loadedModel;
+									// Apply saved colors after model loads and body parts are updated
+									setTimeout(() => {
+										applyModelColors(loadedModel, currentModelName);
+									}, 100);
+								}
+							});
+						} else {
 							currentModelName = "body";
 							loadModel({
 								...availableModels.body,
 								callback: (loadedModel) => {
-									currentModel = loadedModel; // Assign to currentModel for tracking
+									currentModel = loadedModel;
 								}
 							});
 						}
@@ -306,6 +341,9 @@ define([
 			// Update current model name
 			currentModelName = modelKey;
 
+			// Update body parts for new model
+			updateBodyPartsForModel(modelKey);
+
 			// Update toolbar icon
 			const modelButton = document.getElementById('model-button');
 			modelButton.classList.remove('skeleton-icon', 'body-icon', 'organs-icon');
@@ -318,9 +356,39 @@ define([
 				callback: (loadedModel) => {
 					currentModel = loadedModel;
 					console.log(`Successfully loaded ${modelKey} model`);
+
+					// Apply saved colors for this model type
+					applyModelColors(loadedModel, modelKey);
 				}
 			});
 		}
+
+		// function to apply saved colors based on model type
+		function applyModelColors(model, modelName) {
+			model.traverse((node) => {
+				if (node.isMesh) {
+					// Find saved color for this part
+					const part = partsColored.find(
+						([partName, partColor]) => partName === node.name
+					);
+
+					if (part) {
+						const [, partColor] = part;
+						// Apply color if it's not the default black
+						if (partColor !== "#000000" && partColor !== "#ffffff") {
+							node.material = new THREE.MeshStandardMaterial({
+								color: new THREE.Color(partColor),
+								side: THREE.DoubleSide,
+								transparent: false,
+								opacity: 1.0,
+								depthTest: true,
+								depthWrite: true
+							});
+						}
+					}
+				}
+			});
+				}
 
 		document.addEventListener('model-selected', function (event) {
 			const selectedModel = event.detail.model;
@@ -686,23 +754,73 @@ define([
 		zoomEqualButton.addEventListener("click", zoomFunction("click", 29));
 		zoomToButton.addEventListener("click", zoomFunction("click", 35));
 
-		// JSON file containing the body parts and their mesh names
-		fetch("./js/bodyParts.json")
-			.then((response) => response.json())
-			.then((data) => {
-				bodyParts = data;
-				for (let i = 0; i < bodyParts.length; i++) {
-					partsColored.push([bodyParts[i].name, "#000000"]);
+		// Load all body parts data at initialization
+		async function loadAllBodyPartsData() {
+			try {
+				// Load skeleton parts
+				const skeletonResponse = await fetch("./js/bodyParts/skeletonParts.json");
+				bodyPartsData.skeleton = await skeletonResponse.json();
+
+				// Load body parts
+				const bodyResponse = await fetch("./js/bodyParts/humanBodyParts.json");
+				bodyPartsData.body = await bodyResponse.json();
+
+				// Load organs parts
+				const organsResponse = await fetch("./js/bodyParts/organParts.json");
+				bodyPartsData.organs = await organsResponse.json();
+
+				// Set initial body parts based on current model
+				updateBodyPartsForModel(currentModelName);
+
+				console.log("All body parts data loaded successfully");
+			} catch (error) {
+				console.error("Error loading body parts data:", error);
+				// Fallback to skeleton parts only
+				try {
+					const skeletonResponse = await fetch("./js/bodyParts/skeletonParts.json");
+					bodyPartsData.skeleton = await skeletonResponse.json();
+					bodyParts = bodyPartsData.skeleton;
+					initializePartsColored();
+				} catch (fallbackError) {
+					console.error("Error loading fallback skeleton parts:", fallbackError);
 				}
-			})
-			.catch((error) => {
-				console.error("Error fetching bodyParts.json:", error);
-			});
+			}
+		}
+
+		// Function to update body parts when model changes
+		function updateBodyPartsForModel(modelName) {
+			if (bodyPartsData[modelName] && bodyPartsData[modelName].length > 0) {
+				bodyParts = bodyPartsData[modelName];
+				console.log(`Updated body parts for model: ${modelName}`, bodyParts);
+
+				// Reset parts colored array for new model
+				initializePartsColored();
+
+				// Reset doctor mode if active
+				if (isDoctorActive) {
+					currentBodyPartIndex = 0;
+					presenceIndex = 0;
+				}
+			} else {
+				console.warn(`No body parts data found for model: ${modelName}`);
+			}
+		}
+
+		// Function to initialize partsColored array
+		function initializePartsColored() {
+			partsColored = [];
+			for (let i = 0; i < bodyParts.length; i++) {
+				partsColored.push([bodyParts[i].name, "#000000"]);
+			}
+		}
+
+		// Replace the existing fetch call with this:
+		loadAllBodyPartsData();
 
 		function startDoctorMode() {
 			currentBodyPartIndex = 0;
 			if (bodyParts[currentBodyPartIndex]) {
-				showModal(l10n.get("FindThe", { name: bodyParts[currentBodyPartIndex].name }));
+				showModal(l10n.get("FindThe", { name: l10n.get(bodyParts[currentBodyPartIndex].name) }));
 			}
 		}
 
@@ -714,7 +832,7 @@ define([
 			});
 			presenceCorrectIndex = presenceIndex;
 			if (bodyParts[presenceIndex]) {
-				showModal(l10n.get("FindThe", { name: bodyParts[presenceIndex].name }));
+				showModal(l10n.get("FindThe", { name: l10n.get(bodyParts[presenceIndex].name) }));
 			} else {
 				showModal(l10n.get("GameOverAll"));
 			}
@@ -1102,12 +1220,12 @@ define([
 					showModal(
 						l10n.get("Correct") + " " +
 						(bodyParts[++currentBodyPartIndex] ?
-							l10n.get("NextPart", { name: bodyParts[currentBodyPartIndex].name }) : "")
+							l10n.get("NextPart", { name: l10n.get(bodyParts[currentBodyPartIndex].name) }) : "")
 					);
 				} else {
 					showModal(
 						bodyParts[++currentBodyPartIndex]?
-							l10n.get("TryToFind", { name: bodyParts[currentBodyPartIndex].name }) :
+							l10n.get("TryToFind", { name: l10n.get(bodyParts[currentBodyPartIndex].name) }) :
 							""
 					);
 				}
