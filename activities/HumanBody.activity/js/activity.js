@@ -7,6 +7,7 @@ define([
 	"activity/palettes/settingspalette",
 	"sugar-web/graphics/presencepalette",
 	"l10n",
+	"tutorial",
 ], function (
 	activity,
 	env,
@@ -16,6 +17,7 @@ define([
 	settingspalette,
 	presencepalette,
 	l10n,
+	tutorial,
 ) {
 	requirejs(["domReady!"], function (doc) {
 		activity.setup();
@@ -103,6 +105,10 @@ define([
 					}
 				});
 			});
+		// Launch tutorial
+		document.getElementById("help-button").addEventListener('click', function (e) {
+			tutorial.start();
+		});
 
 		// Store the environment
 		let currentenv;
