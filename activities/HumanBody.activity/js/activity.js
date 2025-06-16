@@ -105,6 +105,7 @@ define([
 					}
 				});
 			});
+			
 		// Launch tutorial
 		document.getElementById("help-button").addEventListener('click', function (e) {
 			tutorial.start();
@@ -1316,6 +1317,130 @@ define([
 
 		window.addEventListener("click", onMouseClick, false);
 
+		document.getElementById("fullscreen-button").addEventListener('click', function () {
+			// Add fullscreen class to body for CSS styling
+			document.body.classList.add('fullscreen-mode');
+
+			// Hide toolbar with smooth transition
+			const toolbar = document.getElementById("main-toolbar");
+			toolbar.style.transition = "opacity 0.3s ease";
+			toolbar.style.opacity = "0";
+			toolbar.style.pointerEvents = "none";
+
+			// Adjust canvas position and size
+			const canvas = document.getElementById("canvas");
+			canvas.style.position = "fixed";
+			canvas.style.top = "0px";
+			canvas.style.left = "0px";
+			canvas.style.width = "100vw";
+			canvas.style.height = "100vh";
+			canvas.style.zIndex = "1000";
+
+			// Show unfullscreen button
+			const unfullscreenButton = document.getElementById("unfullscreen-button");
+			unfullscreenButton.classList.add("visible");
+
+			// Update canvas offset if gearSketch exists
+			if (typeof gearSketch !== 'undefined' && gearSketch.canvas) {
+				gearSketch.canvasOffsetY = gearSketch.canvas.getBoundingClientRect().top;
+				if (gearSketch.updateCanvasSize) {
+					gearSketch.updateCanvasSize();
+				}
+			}
+
+			// Update renderer size if it exists
+			if (typeof renderer !== 'undefined' && renderer.setSize) {
+				renderer.setSize(window.innerWidth, window.innerHeight);
+			}
+
+			// Update camera aspect ratio if camera exists
+			if (typeof camera !== 'undefined') {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+			}
+		});
+
+		document.getElementById("unfullscreen-button").addEventListener('click', function () {
+			// Remove fullscreen class from body
+			document.body.classList.remove('fullscreen-mode');
+
+			// Show toolbar with smooth transition
+			const toolbar = document.getElementById("main-toolbar");
+			toolbar.style.transition = "opacity 0.3s ease";
+			toolbar.style.opacity = "1";
+			toolbar.style.pointerEvents = "auto";
+
+			// Reset canvas position and size
+			const canvas = document.getElementById("canvas");
+			canvas.style.position = "";
+			canvas.style.top = "55px";
+			canvas.style.left = "";
+			canvas.style.width = "";
+			canvas.style.height = "";
+			canvas.style.zIndex = "";
+
+			// Hide unfullscreen button
+			const unfullscreenButton = document.getElementById("unfullscreen-button");
+			unfullscreenButton.classList.remove("visible");
+
+			// Update canvas offset if gearSketch exists
+			if (typeof gearSketch !== 'undefined' && gearSketch.canvas) {
+				gearSketch.canvasOffsetY = gearSketch.canvas.getBoundingClientRect().top;
+				if (gearSketch.updateCanvasSize) {
+					gearSketch.updateCanvasSize();
+				}
+			}
+
+			// Update renderer size if it exists
+			if (typeof renderer !== 'undefined' && renderer.setSize) {
+				// Calculate proper canvas size based on toolbar height
+				const toolbarHeight = toolbar.offsetHeight || 55;
+				const canvasWidth = window.innerWidth;
+				const canvasHeight = window.innerHeight - toolbarHeight;
+				renderer.setSize(canvasWidth, canvasHeight);
+			}
+
+			// Update camera aspect ratio if camera exists
+			if (typeof camera !== 'undefined') {
+				const toolbarHeight = toolbar.offsetHeight || 55;
+				camera.aspect = window.innerWidth / (window.innerHeight - toolbarHeight);
+				camera.updateProjectionMatrix();
+			}
+		});
+
+		// Handle window resize in fullscreen mode
+		window.addEventListener('resize', function () {
+			if (document.body.classList.contains('fullscreen-mode')) {
+				// Update renderer size if in fullscreen
+				if (typeof renderer !== 'undefined' && renderer.setSize) {
+					renderer.setSize(window.innerWidth, window.innerHeight);
+				}
+
+				// Update camera aspect ratio
+				if (typeof camera !== 'undefined') {
+					camera.aspect = window.innerWidth / window.innerHeight;
+					camera.updateProjectionMatrix();
+				}
+			} else {
+				// Update renderer size for normal mode
+				if (typeof renderer !== 'undefined' && renderer.setSize) {
+					const toolbar = document.getElementById("main-toolbar");
+					const toolbarHeight = toolbar.offsetHeight || 55;
+					const canvasWidth = window.innerWidth;
+					const canvasHeight = window.innerHeight - toolbarHeight;
+					renderer.setSize(canvasWidth, canvasHeight);
+				}
+
+				// Update camera aspect ratio for normal mode
+				if (typeof camera !== 'undefined') {
+					const toolbar = document.getElementById("main-toolbar");
+					const toolbarHeight = toolbar.offsetHeight || 55;
+					camera.aspect = window.innerWidth / (window.innerHeight - toolbarHeight);
+					camera.updateProjectionMatrix();
+				}
+			}
+		});
+		
 		function animate() {
 			renderer.render(scene, camera);
 		}

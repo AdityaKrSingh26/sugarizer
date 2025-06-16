@@ -32,7 +32,7 @@
 	"Blue": "Bleu",
 
 	"TutorialWelcomeTitle": "Activité Corps Humain",
-	"TutorialWelcomeIntro": "Bienvenue dans l'Activité Corps Humain.",
+	"TutorialWelcomeIntro": "Bienvenue dans l’activité Corps Humain. Explorez le corps humain en 3D avec des couches interactives. Changez de vue, mettez en surbrillance des parties et jouez à des quiz amusants avec vos amis en mode Docteur.",
 	"TutorialNetworkTitle": "Rejoindre le Réseau",
 	"TutorialNetworkIntro": "Cliquez ici pour rejoindre le réseau. Cela vous permettra de vous connecter avec d'autres utilisateurs et de partager votre activité Corps Humain.",
 	"TutorialModelTitle": "Sélectionner un modèle",
@@ -45,8 +45,8 @@
 	"TutorialZoomIntro": "Cliquez ici pour zoomer ou dézoomer sur le modèle 3D. Cela vous permettra de voir le modèle plus en détail ou d'avoir une vue plus large.",
 	"TutorialStopTitle": "Arrêter l'Activité",
 	"TutorialStopIntro": "Cliquez ici pour arrêter l'activité Corps Humain. Cela terminera votre session actuelle et vous ramènera au menu principal.",
-	"TutorialPrev": "Précédent",
-	"TutorialNext": "Suivant",
+	"TutorialPrev": "Préc",
+	"TutorialNext": "Suiv",
 
 	"Skull": "Crâne",
 	"Spine": "Colonne vertébrale",
