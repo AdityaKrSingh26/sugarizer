@@ -42,6 +42,12 @@ define([
 				intro: l10n.get("TutorialZoomIntro"),
 			},
 			{
+				element: "#fullscreen-button",
+				position: "bottom",
+				title: l10n.get("FullScreenTitle"),
+				intro: l10n.get("FullScreenIntro"),
+			},
+			{
 				element: "#stop-button",
 				position: "bottom",
 				title: l10n.get("TutorialStopTitle"),

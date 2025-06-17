@@ -42,6 +42,13 @@ define([
 			organs: []
 		};
 
+		// Store painted parts per model
+		let modelPaintData = {
+			skeleton: [],
+			body: [],
+			organs: []
+		};
+
 		// Model state management
 		let currentModel = null;
 
@@ -89,10 +96,16 @@ define([
 			.addEventListener("click", function (event) {
 				console.log("writing...");
 
-				// Save both model name and parts colored data
+				// Save current model's paint data before saving
+				if (currentModelName && currentModel) {
+					modelPaintData[currentModelName] = [...partsColored];
+				}
+
+				// Save all model paint data along with current model
 				const saveData = {
 					modelName: currentModelName,
-					partsColored: partsColored
+					modelPaintData: modelPaintData,
+					partsColored: partsColored,
 				};
 
 				var jsonData = JSON.stringify(saveData);
@@ -111,12 +124,10 @@ define([
 			tutorial.start();
 		});
 
-		// Store the environment
 		let currentenv;
 		env.getEnvironment(function (err, environment) {
 			currentenv = environment;
 
-			// Set current language to Sugarizer
 			var defaultLanguage = 
 						(typeof chrome != 'undefined' && chrome.app && chrome.app.runtime) 
 						? chrome.i18n.getUILanguage() 
@@ -126,7 +137,6 @@ define([
 
 			// Process localize event
 			window.addEventListener("localized", function () {
-				// Update mode text based on current mode
 				updateModeText();
 			}, false);
 
@@ -136,10 +146,16 @@ define([
 			if (!environment.objectId) {
 				console.log("New instance");
 				currentModelName = "body";
+				// Initialize all model paint data
+				modelPaintData = {
+					skeleton: [],
+					body: [],
+					organs: []
+				};
 				loadModel({
 					...availableModels.body,
 					callback: (loadedModel) => {
-						currentModel = loadedModel; // Assign to currentModel for tracking
+						currentModel = loadedModel;
 					}
 				});
 			} else {
@@ -149,14 +165,33 @@ define([
 						if (error == null && data != null) {
 							const savedData = JSON.parse(data);
 
+							// Load model paint data if available
+							if (savedData.modelPaintData) {
+								modelPaintData = savedData.modelPaintData;
+								console.log("Loaded model paint data:", modelPaintData);
+							} else {
+								// Initialize empty paint data for all models
+								modelPaintData = {
+									skeleton: [],
+									body: [],
+									organs: []
+								};
+							}
+
 							// Check if saved data includes model information
 							if (savedData.modelName && availableModels[savedData.modelName]) {
 								currentModelName = savedData.modelName;
 								partsColored = savedData.partsColored || [];
+
+								// If we have model-specific paint data, use that instead
+								if (modelPaintData[currentModelName] && modelPaintData[currentModelName].length > 0) {
+									partsColored = [...modelPaintData[currentModelName]];
+								}
 							} else {
-								// Legacy format - assume it's just partsColored array
+								// Legacy format - assume it's just partsColored array for body model
 								partsColored = savedData;
 								currentModelName = "body";
+								modelPaintData.body = [...partsColored];
 							}
 
 							loadModel({
@@ -171,6 +206,12 @@ define([
 							});
 						} else {
 							currentModelName = "body";
+							// Initialize empty paint data
+							modelPaintData = {
+								skeleton: [],
+								body: [],
+								organs: []
+							};
 							loadModel({
 								...availableModels.body,
 								callback: (loadedModel) => {
@@ -196,7 +237,38 @@ define([
 			}
 		});
 
-		// General function to load models, can be reused for different models
+		function logAllMeshesAsJSON(model) {
+			const meshData = [];
+
+			model.traverse((node) => {
+				if (node.isMesh && node.name) {
+					// Get world position
+					const worldPosition = node.getWorldPosition(new THREE.Vector3());
+
+					const meshInfo = {
+						name: node.name.replace(/_Material\d+mat_\d+$/, ''), // Clean up material suffix if needed
+						mesh: node.name,
+						position: [
+							parseFloat(worldPosition.x.toFixed(2)),
+							parseFloat(worldPosition.y.toFixed(2)),
+							parseFloat(worldPosition.z.toFixed(2))
+						]
+					};
+
+					meshData.push(meshInfo);
+				}
+			});
+
+			// Sort by mesh name for consistency
+			meshData.sort((a, b) => a.mesh.localeCompare(b.mesh));
+
+			console.log("=== ALL MESHES AS JSON ===");
+			console.log(JSON.stringify(meshData, null, 2));
+			console.log("=== END JSON ===");
+
+			return meshData;
+		}
+
 		function loadModel(options) {
 			const {
 				modelPath,
@@ -276,8 +348,6 @@ define([
 									}
 								}
 							}
-
-							// Ensure visibility and proper setup
 							node.visible = true;
 							node.castShadow = true;
 							node.receiveShadow = true;
@@ -289,11 +359,13 @@ define([
 						}
 					});
 
-					// Update model matrix
 					model.updateMatrix();
 					model.updateMatrixWorld(true);
 
 					scene.add(model);
+
+					console.log(`=== LOGGING MESHES FOR MODEL: ${name} ===`);
+					logAllMeshesAsJSON(model);
 
 					if (callback) callback(model);
 				},
@@ -342,14 +414,23 @@ define([
 				return;
 			}
 
-			// Remove current model
-			removeCurrentModel();
+			// Save current model's paint data before switching
+			if (currentModelName && currentModel) {
+				modelPaintData[currentModelName] = [...partsColored];
+				console.log(`Saved paint data for ${currentModelName}:`, modelPaintData[currentModelName]);
+			}
 
-			// Update current model name
+			removeCurrentModel();
 			currentModelName = modelKey;
 
 			// Update body parts for new model
 			updateBodyPartsForModel(modelKey);
+
+			// Restore paint data for new model
+			if (modelPaintData[modelKey] && modelPaintData[modelKey].length > 0) {
+				partsColored = [...modelPaintData[modelKey]];
+				console.log(`Restored paint data for ${modelKey}:`, partsColored);
+			}
 
 			// Update toolbar icon
 			const modelButton = document.getElementById('model-button');
@@ -369,6 +450,7 @@ define([
 				}
 			});
 		}
+		
 
 		// function to apply saved colors based on model type
 		function applyModelColors(model, modelName) {
@@ -381,7 +463,6 @@ define([
 
 					if (part) {
 						const [, partColor] = part;
-						// Apply color if it's not the default black
 						if (partColor !== "#000000" && partColor !== "#ffffff") {
 							node.material = new THREE.MeshStandardMaterial({
 								color: new THREE.Color(partColor),
@@ -448,7 +529,7 @@ define([
 				loadModel({
 					...availableModels.body,
 					callback: (loadedModel) => {
-						currentModel = loadedModel; // Assign to currentModel for tracking
+						currentModel = loadedModel;
 					}
 				});
 			}
@@ -483,7 +564,6 @@ define([
 				console.log(players);
 				showLeaderboard();
 				presenceIndex++;
-				// startDoctorModePresence();
 			}
 
 			if (msg.action == "startDoctor") {
@@ -519,7 +599,6 @@ define([
 			}
 		};
 
-		// Mode variables to track which mode is active
 		let isPaintActive = true;
 		let isTourActive = false;
 		let isDoctorActive = false;
@@ -528,14 +607,13 @@ define([
 		const modes = ["Paint", "Tour", "Doctor"];
 		let currentModeIndex = 0;
 
-		// DOM elements
 		const modeTextElem = document.getElementById("mode-text");
 		const leftArrow = document.getElementById("left-arrow");
 		const rightArrow = document.getElementById("right-arrow");
 
 		// Function to handle entering Tour mode
 		function startTourMode() {
-			let tourIndex = 0; // Start with the first body part in the list
+			let tourIndex = 0;
 			let previousMesh = null;
 
 			function tourNextPart() {
@@ -549,7 +627,7 @@ define([
 				}
 
 				const part = bodyParts[tourIndex];
-				const position = part.position; // Retrieve the position of the body part
+				const position = part.position;
 
 				// Find the mesh for the current body part
 				const currentMesh = currentModel.getObjectByName(part.mesh);
@@ -566,9 +644,8 @@ define([
 						currentMesh.userData.originalMaterial = currentMesh.material.clone();
 					}
 
-					// Apply highlight color
 					currentMesh.material = new THREE.MeshStandardMaterial({
-						color: new THREE.Color("#ffff00"), // Yellow highlight
+						color: new THREE.Color("#ffff00"),
 						side: THREE.DoubleSide,
 						transparent: true,
 						opacity: 0.8,
@@ -582,7 +659,7 @@ define([
 				}
 
 				// Zoom to the body part's position
-				camera.position.set(position[0], position[1], position[2] + 5); // Adjust the zoom offset as necessary
+				camera.position.set(position[0], position[1], position[2] + 5);
 				camera.lookAt(position[0], position[1], position[2]);
 				camera.updateProjectionMatrix();
 
@@ -591,7 +668,7 @@ define([
 
 				tourIndex++;
 
-				// Set a timeout to move to the next part after a delay (e.g., 3 seconds)
+				// Set a timeout to move to the next part after a delay
 				setTimeout(tourNextPart, 3000);
 			}
 
@@ -761,7 +838,6 @@ define([
 		zoomEqualButton.addEventListener("click", zoomFunction("click", 29));
 		zoomToButton.addEventListener("click", zoomFunction("click", 35));
 
-		// Load all body parts data at initialization
 		async function loadAllBodyPartsData() {
 			try {
 				// Load skeleton parts
@@ -782,15 +858,6 @@ define([
 				console.log("All body parts data loaded successfully");
 			} catch (error) {
 				console.error("Error loading body parts data:", error);
-				// Fallback to skeleton parts only
-				try {
-					const skeletonResponse = await fetch("./js/bodyParts/skeletonParts.json");
-					bodyPartsData.skeleton = await skeletonResponse.json();
-					bodyParts = bodyPartsData.skeleton;
-					initializePartsColored();
-				} catch (fallbackError) {
-					console.error("Error loading fallback skeleton parts:", fallbackError);
-				}
 			}
 		}
 
@@ -798,10 +865,10 @@ define([
 		function updateBodyPartsForModel(modelName) {
 			if (bodyPartsData[modelName] && bodyPartsData[modelName].length > 0) {
 				bodyParts = bodyPartsData[modelName];
-				console.log(`Updated body parts for model: ${modelName}`, bodyParts);
 
-				// Reset parts colored array for new model
-				initializePartsColored();
+				if (!modelPaintData[modelName] || modelPaintData[modelName].length === 0) {
+					initializePartsColored();
+				}
 
 				// Reset doctor mode if active
 				if (isDoctorActive) {
@@ -1034,8 +1101,6 @@ define([
 
 		raycaster.near = camera.near;
 		raycaster.far = camera.far;
-
-		// Set raycaster parameters for better intersection detection
 		raycaster.params.Points.threshold = 0.1;
 		raycaster.params.Line.threshold = 0.1;
 
@@ -1144,7 +1209,6 @@ define([
 			let bodyPartName = clickedBodyPart ? clickedBodyPart.name : object.name;
 			showPaintModal(bodyPartName);
 
-			// Update partsColored array
 			const index = partsColored.findIndex(([name, color]) => name === object.name);
 			if (index !== -1) {
 				partsColored.splice(index, 1);
@@ -1244,7 +1308,6 @@ define([
 			}
 		}
 
-		// click handler that uses screen-space testing
 		function onMouseClick(event) {
 			const rect = renderer.domElement.getBoundingClientRect();
 			const x = event.clientX - rect.left;
@@ -1254,11 +1317,9 @@ define([
 			mouse.x = (x / rect.width) * 2 - 1;
 			mouse.y = -(y / rect.height) * 2 + 1;
 
-			// Create a new raycaster with looser parameters
 			const altRaycaster = new THREE.Raycaster();
 			altRaycaster.setFromCamera(mouse, camera);
 
-			// Set more permissive parameters
 			altRaycaster.near = 0.01;
 			altRaycaster.far = 1000;
 			altRaycaster.params.Points.threshold = 1.0;
@@ -1318,16 +1379,8 @@ define([
 		window.addEventListener("click", onMouseClick, false);
 
 		document.getElementById("fullscreen-button").addEventListener('click', function () {
-			// Add fullscreen class to body for CSS styling
 			document.body.classList.add('fullscreen-mode');
 
-			// Hide toolbar with smooth transition
-			const toolbar = document.getElementById("main-toolbar");
-			toolbar.style.transition = "opacity 0.3s ease";
-			toolbar.style.opacity = "0";
-			toolbar.style.pointerEvents = "none";
-
-			// Adjust canvas position and size
 			const canvas = document.getElementById("canvas");
 			canvas.style.position = "fixed";
 			canvas.style.top = "0px";
@@ -1336,11 +1389,9 @@ define([
 			canvas.style.height = "100vh";
 			canvas.style.zIndex = "1000";
 
-			// Show unfullscreen button
 			const unfullscreenButton = document.getElementById("unfullscreen-button");
 			unfullscreenButton.classList.add("visible");
 
-			// Update canvas offset if gearSketch exists
 			if (typeof gearSketch !== 'undefined' && gearSketch.canvas) {
 				gearSketch.canvasOffsetY = gearSketch.canvas.getBoundingClientRect().top;
 				if (gearSketch.updateCanvasSize) {
@@ -1348,12 +1399,10 @@ define([
 				}
 			}
 
-			// Update renderer size if it exists
 			if (typeof renderer !== 'undefined' && renderer.setSize) {
 				renderer.setSize(window.innerWidth, window.innerHeight);
 			}
 
-			// Update camera aspect ratio if camera exists
 			if (typeof camera !== 'undefined') {
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();
@@ -1361,16 +1410,8 @@ define([
 		});
 
 		document.getElementById("unfullscreen-button").addEventListener('click', function () {
-			// Remove fullscreen class from body
 			document.body.classList.remove('fullscreen-mode');
 
-			// Show toolbar with smooth transition
-			const toolbar = document.getElementById("main-toolbar");
-			toolbar.style.transition = "opacity 0.3s ease";
-			toolbar.style.opacity = "1";
-			toolbar.style.pointerEvents = "auto";
-
-			// Reset canvas position and size
 			const canvas = document.getElementById("canvas");
 			canvas.style.position = "";
 			canvas.style.top = "55px";
@@ -1379,11 +1420,9 @@ define([
 			canvas.style.height = "";
 			canvas.style.zIndex = "";
 
-			// Hide unfullscreen button
 			const unfullscreenButton = document.getElementById("unfullscreen-button");
 			unfullscreenButton.classList.remove("visible");
 
-			// Update canvas offset if gearSketch exists
 			if (typeof gearSketch !== 'undefined' && gearSketch.canvas) {
 				gearSketch.canvasOffsetY = gearSketch.canvas.getBoundingClientRect().top;
 				if (gearSketch.updateCanvasSize) {
@@ -1391,7 +1430,6 @@ define([
 				}
 			}
 
-			// Update renderer size if it exists
 			if (typeof renderer !== 'undefined' && renderer.setSize) {
 				// Calculate proper canvas size based on toolbar height
 				const toolbarHeight = toolbar.offsetHeight || 55;
@@ -1400,7 +1438,6 @@ define([
 				renderer.setSize(canvasWidth, canvasHeight);
 			}
 
-			// Update camera aspect ratio if camera exists
 			if (typeof camera !== 'undefined') {
 				const toolbarHeight = toolbar.offsetHeight || 55;
 				camera.aspect = window.innerWidth / (window.innerHeight - toolbarHeight);
@@ -1411,18 +1448,15 @@ define([
 		// Handle window resize in fullscreen mode
 		window.addEventListener('resize', function () {
 			if (document.body.classList.contains('fullscreen-mode')) {
-				// Update renderer size if in fullscreen
 				if (typeof renderer !== 'undefined' && renderer.setSize) {
 					renderer.setSize(window.innerWidth, window.innerHeight);
 				}
 
-				// Update camera aspect ratio
 				if (typeof camera !== 'undefined') {
 					camera.aspect = window.innerWidth / window.innerHeight;
 					camera.updateProjectionMatrix();
 				}
 			} else {
-				// Update renderer size for normal mode
 				if (typeof renderer !== 'undefined' && renderer.setSize) {
 					const toolbar = document.getElementById("main-toolbar");
 					const toolbarHeight = toolbar.offsetHeight || 55;
@@ -1431,7 +1465,6 @@ define([
 					renderer.setSize(canvasWidth, canvasHeight);
 				}
 
-				// Update camera aspect ratio for normal mode
 				if (typeof camera !== 'undefined') {
 					const toolbar = document.getElementById("main-toolbar");
 					const toolbarHeight = toolbar.offsetHeight || 55;
@@ -1440,7 +1473,7 @@ define([
 				}
 			}
 		});
-		
+
 		function animate() {
 			renderer.render(scene, camera);
 		}
