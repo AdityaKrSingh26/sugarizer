@@ -21,14 +21,30 @@ define([
 ) {
 	requirejs(["domReady!"], function (doc) {
 		activity.setup();
+
+		let currentenv;
+
+		// STATE VARIABLES
 		let fillColor = null;
-		let doctorMode = false;
-		let currentBodyPartIndex = 0;
-		let modal = null;
+		let currentModel = null;
+		let currentModelName = "body";
 		let partsColored = [];
-		let username = null;
+		let modal = null;
+
+		// MODE VARIABLES  
+		let isPaintActive = true;
+		let isTourActive = false;
+		let isDoctorActive = false;
+		let currentModeIndex = 0;
+
+		// NETWORK VARIABLES
+		let presence = null;
 		let players = [];
 		let isHost = false;
+		let username = null;
+
+		let doctorMode = false;
+		let currentBodyPartIndex = 0;
 		let presenceCorrectIndex = 0;
 		let presenceIndex = 0;
 		let ifDoctorHost = false;
@@ -49,11 +65,8 @@ define([
 			organs: []
 		};
 
-		// Model state management
-		let currentModel = null;
-
-		// Default model
-		let currentModelName = "body"; 
+		// Array of modes
+		const modes = ["Paint", "Tour", "Doctor"];
 
 		const availableModels = {
 			skeleton: {
@@ -124,7 +137,6 @@ define([
 			tutorial.start();
 		});
 
-		let currentenv;
 		env.getEnvironment(function (err, environment) {
 			currentenv = environment;
 
@@ -364,8 +376,8 @@ define([
 
 					scene.add(model);
 
-					console.log(`=== LOGGING MESHES FOR MODEL: ${name} ===`);
-					logAllMeshesAsJSON(model);
+					// console.log(`=== LOGGING MESHES FOR MODEL: ${name} ===`);
+					// logAllMeshesAsJSON(model);
 
 					if (callback) callback(model);
 				},
@@ -451,7 +463,6 @@ define([
 			});
 		}
 		
-
 		// function to apply saved colors based on model type
 		function applyModelColors(model, modelName) {
 			model.traverse((node) => {
@@ -476,7 +487,26 @@ define([
 					}
 				}
 			});
+		}
+
+		// Function to update body parts when model changes
+		function updateBodyPartsForModel(modelName) {
+			if (bodyPartsData[modelName] && bodyPartsData[modelName].length > 0) {
+				bodyParts = bodyPartsData[modelName];
+
+				if (!modelPaintData[modelName] || modelPaintData[modelName].length === 0) {
+					initializePartsColored();
 				}
+
+				// Reset doctor mode if active
+				if (isDoctorActive) {
+					currentBodyPartIndex = 0;
+					presenceIndex = 0;
+				}
+			} else {
+				console.warn(`No body parts data found for model: ${modelName}`);
+			}
+		}
 
 		document.addEventListener('model-selected', function (event) {
 			const selectedModel = event.detail.model;
@@ -491,11 +521,11 @@ define([
 		});
 
 		// Link presence palette
-		var presence = null;
 		var palette = new presencepalette.PresencePalette(
 			document.getElementById("network-button"),
 			undefined
 		);
+
 		palette.addEventListener("shared", function () {
 			palette.popDown();
 			console.log("Want to share");
@@ -537,7 +567,9 @@ define([
 			if (msg.action == "nextQuestion") {
 				if (bodyParts[msg.content]) {
 					presenceCorrectIndex = msg.content;
-					showModal(l10n.get("FindThe", { name: l10n.get(bodyParts[currentBodyPartIndex].name) }));
+					currentBodyPartIndex = msg.content;
+
+					showModal(l10n.get("FindThe", { name: l10n.get(bodyParts[presenceCorrectIndex].name) }));
 				}
 			}
 
@@ -599,19 +631,57 @@ define([
 			}
 		};
 
-		let isPaintActive = true;
-		let isTourActive = false;
-		let isDoctorActive = false;
-
-		// Array of modes
-		const modes = ["Paint", "Tour", "Doctor"];
-		let currentModeIndex = 0;
-
 		const modeTextElem = document.getElementById("mode-text");
 		const leftArrow = document.getElementById("left-arrow");
 		const rightArrow = document.getElementById("right-arrow");
 
-		// Function to handle entering Tour mode
+		function updateModeText() {
+			// If switching from Tour mode, stop it
+			if (isTourActive && currentModeIndex !== 2) {
+				stopTourMode();
+			}
+
+			// If switching from Doctor mode, stop it
+			if (isDoctorActive && currentModeIndex !== 3) {
+				stopDoctorMode();
+			}
+
+			const modeKey = modes[currentModeIndex];
+
+			// Check if modeTextElem exists before setting textContent
+			if (modeTextElem) {
+				modeTextElem.textContent = l10n.get(modeKey);
+			}
+
+			// Update mode tracking variables
+			isPaintActive = currentModeIndex === 0;
+			isTourActive = currentModeIndex === 2;
+			isDoctorActive = currentModeIndex === 3;
+
+			// If switching to Tour mode, start it
+			if (isTourActive) {
+				startTourMode();
+			}
+
+			// If switching to Doctor mode, start it
+			if (isDoctorActive) {
+				if (presence) {
+					showLeaderboard();
+
+					presence.sendMessage(presence.getSharedInfo().id, {
+						user: presence.getUserInfo(),
+						action: "startDoctor",
+						content: players,
+					});
+					ifDoctorHost = true;
+					startDoctorModePresence();
+				} else {
+					console.log("starting doctor mode");
+					startDoctorMode();
+				}
+			}
+		}
+		
 		function startTourMode() {
 			let tourIndex = 0;
 			let previousMesh = null;
@@ -675,57 +745,38 @@ define([
 			tourNextPart(); // Start the tour
 		}
 
-		// Function to handle exiting Tour mode
 		function stopTourMode() {
 			camera.position.set(0, 10, 20);
 			camera.lookAt(0, 0, 0);
 		}
 
-		// Update the mode text based on the current mode index
-		function updateModeText() {
-			// If switching from Tour mode, stop it
-			if (isTourActive && currentModeIndex !== 2) {
-				stopTourMode();
+		function startDoctorMode() {
+			currentBodyPartIndex = 0;
+			if (bodyParts[currentBodyPartIndex]) {
+				showModal(l10n.get("FindThe", { name: l10n.get(bodyParts[currentBodyPartIndex].name) }));
 			}
+		}
 
-			// If switching from Doctor mode, stop it
-			if (isDoctorActive && currentModeIndex !== 3) {
-				stopDoctorMode();
+		function startDoctorModePresence() {
+			presence.sendMessage(presence.getSharedInfo().id, {
+				user: presence.getUserInfo(),
+				action: "nextQuestion",
+				content: presenceIndex,
+			});
+			presenceCorrectIndex = presenceIndex;
+			currentBodyPartIndex = presenceIndex;
+
+			if (bodyParts[presenceIndex]) {
+				showModal(l10n.get("FindThe", { name: l10n.get(bodyParts[presenceIndex].name) }));
+			} else {
+				showModal(l10n.get("GameOverAll"));
 			}
+		}
 
-			const modeKey = modes[currentModeIndex];
-
-			// Check if modeTextElem exists before setting textContent
-			if (modeTextElem) {
-				modeTextElem.textContent = l10n.get(modeKey);
-			}
-
-			// Update mode tracking variables
-			isPaintActive = currentModeIndex === 0;
-			isTourActive = currentModeIndex === 2;
-			isDoctorActive = currentModeIndex === 3;
-
-			// If switching to Tour mode, start it
-			if (isTourActive) {
-				startTourMode();
-			}
-
-			// If switching to Doctor mode, start it
-			if (isDoctorActive) {
-				if (presence) {
-					showLeaderboard();
-
-					presence.sendMessage(presence.getSharedInfo().id, {
-						user: presence.getUserInfo(),
-						action: "startDoctor",
-						content: players,
-					});
-					ifDoctorHost = true;
-					startDoctorModePresence();
-				} else {
-					console.log("starting doctor mode");
-					startDoctorMode();
-				}
+		function stopDoctorMode() {
+			if (modal) {
+				document.body.removeChild(modal);
+				modal = null;
 			}
 		}
 
@@ -861,25 +912,6 @@ define([
 			}
 		}
 
-		// Function to update body parts when model changes
-		function updateBodyPartsForModel(modelName) {
-			if (bodyPartsData[modelName] && bodyPartsData[modelName].length > 0) {
-				bodyParts = bodyPartsData[modelName];
-
-				if (!modelPaintData[modelName] || modelPaintData[modelName].length === 0) {
-					initializePartsColored();
-				}
-
-				// Reset doctor mode if active
-				if (isDoctorActive) {
-					currentBodyPartIndex = 0;
-					presenceIndex = 0;
-				}
-			} else {
-				console.warn(`No body parts data found for model: ${modelName}`);
-			}
-		}
-
 		// Function to initialize partsColored array
 		function initializePartsColored() {
 			partsColored = [];
@@ -887,73 +919,20 @@ define([
 				partsColored.push([bodyParts[i].name, "#000000"]);
 			}
 		}
-
-		// Replace the existing fetch call with this:
 		loadAllBodyPartsData();
-
-		function startDoctorMode() {
-			currentBodyPartIndex = 0;
-			if (bodyParts[currentBodyPartIndex]) {
-				showModal(l10n.get("FindThe", { name: l10n.get(bodyParts[currentBodyPartIndex].name) }));
-			}
-		}
-
-		function startDoctorModePresence() {
-			presence.sendMessage(presence.getSharedInfo().id, {
-				user: presence.getUserInfo(),
-				action: "nextQuestion",
-				content: presenceIndex,
-			});
-			presenceCorrectIndex = presenceIndex;
-			if (bodyParts[presenceIndex]) {
-				showModal(l10n.get("FindThe", { name: l10n.get(bodyParts[presenceIndex].name) }));
-			} else {
-				showModal(l10n.get("GameOverAll"));
-			}
-		}
-
-		function stopDoctorMode() {
-			if (modal) {
-				document.body.removeChild(modal);
-				modal = null;
-			}
-		}
 
 		function showModal(text) {
 			// Check if a modal is already displayed
 			let existingModal = document.querySelector('.custom-modal');
 			if (existingModal) {
-				// If a modal exists, remove it before showing a new one
 				existingModal.remove();
 			}
 
 			const modal = document.createElement("div");
 			modal.className = "custom-modal";
-
-			// Style the modal
-			modal.style.position = "absolute";
-			modal.style.top = "50%";
-			modal.style.left = "50%";
-			modal.style.transform = "translate(-50%, -50%)";
-			modal.style.backgroundColor = "#f9f9f9"; // Light grey background for a softer look
-			modal.style.padding = "30px"; // Increase padding for a larger modal
-			modal.style.border = "3px solid #007bff"; // Blue border for a pop of color
-			modal.style.borderRadius = "8px"; // Rounded corners for a smoother appearance
-			modal.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)"; // Add a shadow for depth
-			modal.style.zIndex = "1000";
-			modal.style.textAlign = "center"; // Center the text inside the modal
-
-			// Style the text inside the modal
-			modal.style.fontSize = "18px"; // Larger text size
-			modal.style.fontWeight = "bold"; // Bold text
-			modal.style.color = "#333"; // Darker text color for better contrast
-
 			modal.innerHTML = text;
 			numModals++;
-			// if (numModals > 1) {
-			//     console.log("have modals already")
-			//     modal.style.top = "30%"
-			// }
+
 			document.body.appendChild(modal);
 
 			// Make the modal disappear after 1.5 seconds
@@ -1005,9 +984,24 @@ define([
 
 		function updateSlidersFill(color) {
 			const rgb = hexToRgb(color);
-			redSliderFill.value = rgb.r;
-			greenSliderFill.value = rgb.g;
-			blueSliderFill.value = rgb.b;
+			// Check if rgb is not null
+			if (rgb) { 
+				redSliderFill.value = rgb.r;
+				greenSliderFill.value = rgb.g;
+				blueSliderFill.value = rgb.b;
+
+				// Update the sliderColorFill object to keep it in sync
+				sliderColorFill = {
+					r: rgb.r,
+					g: rgb.g,
+					b: rgb.b
+				};
+			} else {
+				redSliderFill.value = 0;
+				greenSliderFill.value = 0;
+				blueSliderFill.value = 0;
+				sliderColorFill = { r: 0, g: 0, b: 0 };
+			}
 		}
 
 		function handleSliderChangeFill() {
@@ -1139,49 +1133,19 @@ define([
 
 			const paintModal = document.createElement("div");
 			paintModal.className = "paint-modal";
-
-			// Style the modal for bottom right corner
-			paintModal.style.position = "fixed";
-			paintModal.style.bottom = "20px";
-			paintModal.style.right = "20px";
-			paintModal.style.backgroundColor = "#2c3e50"; // Dark blue-grey background
-			paintModal.style.color = "#ffffff"; // White text
-			paintModal.style.padding = "12px 16px"; // Compact padding
-			paintModal.style.border = "2px solid #3498db"; // Blue border
-			paintModal.style.borderRadius = "8px"; // Rounded corners
-			paintModal.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.3)"; // Shadow for depth
-			paintModal.style.zIndex = "1001"; // Higher than other modals
-			paintModal.style.fontSize = "14px"; // Smaller, readable text
-			paintModal.style.fontWeight = "600"; // Semi-bold text
-			paintModal.style.width = "200px"; // Limit width
-			paintModal.style.minHeight = "20px"; // Add minimum height
-			paintModal.style.maxHeight = "80px"; // Add maximum height
-			paintModal.style.wordWrap = "break-word"; // Wrap long words
-			paintModal.style.whiteSpace = "normal"; // Allow text wrapping
-			paintModal.style.overflowWrap = "break-word"; // Break long words if needed
-			paintModal.style.textAlign = "center";
-			paintModal.style.display = "flex"; // Use flexbox for better text centering
-			paintModal.style.alignItems = "center"; // Center text vertically
-			paintModal.style.justifyContent = "center"; // Center text horizontally
-			paintModal.style.opacity = "0"; // Start invisible for fade-in effect
-			paintModal.style.transform = "translateY(10px)"; // Start slightly below
-			paintModal.style.transition = "all 0.3s ease"; // Smooth animation
-
 			paintModal.innerHTML = l10n.get(bodyPartName);
 			document.body.appendChild(paintModal);
 
 			// Trigger fade-in animation
 			setTimeout(() => {
-				paintModal.style.opacity = "1";
-				paintModal.style.transform = "translateY(0)";
+				paintModal.classList.add('show');
 			}, 10);
 
 			// Make the modal disappear after 2 seconds with fade-out
 			setTimeout(() => {
 				if (paintModal && paintModal.parentNode === document.body) {
-					paintModal.style.opacity = "0";
-					paintModal.style.transform = "translateY(10px)";
-					
+					paintModal.classList.remove('show');
+
 					// Remove after animation completes
 					setTimeout(() => {
 						if (paintModal && paintModal.parentNode === document.body) {
