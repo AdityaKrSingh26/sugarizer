@@ -42,16 +42,16 @@ define([
 				intro: l10n.get("TutorialZoomIntro"),
 			},
 			{
+				element: "#orientation-buttons",
+				position: "bottom",
+				title: l10n.get("TutorialOrientationTitle"),
+				intro: l10n.get("TutorialOrientationIntro"),
+			},
+			{
 				element: "#fullscreen-button",
 				position: "bottom",
 				title: l10n.get("FullScreenTitle"),
 				intro: l10n.get("FullScreenIntro"),
-			},
-			{
-				element: "#stop-button",
-				position: "bottom",
-				title: l10n.get("TutorialStopTitle"),
-				intro: l10n.get("TutorialStopIntro"),
 			},
 		];
 		

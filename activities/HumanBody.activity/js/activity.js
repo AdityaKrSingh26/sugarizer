@@ -197,6 +197,20 @@ define([
 								currentModelName = savedData.modelName;
 								partsColored = savedData.partsColored || [];
 
+								setTimeout(function () {
+									// Update the model palette to show the correct active button
+									if (paletteModel.updateActiveModel) {
+										paletteModel.updateActiveModel(currentModelName);
+									}
+
+									// Also update the main toolbar button icon
+									const modelButton = document.getElementById('model-button');
+									if (modelButton) {
+										modelButton.classList.remove('skeleton-icon', 'body-icon', 'organs-icon');
+										modelButton.classList.add(currentModelName + '-icon');
+									}
+								}, 200); // Small delay to ensure palette is fully initialized
+
 								// If we have model-specific paint data, use that instead
 								if (modelPaintData[currentModelName] && modelPaintData[currentModelName].length > 0) {
 									partsColored = [...modelPaintData[currentModelName]];

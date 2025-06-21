@@ -35,8 +35,14 @@ define([
 				});
 				if (activeButton) activeButton.classList.add('active');
 			}
-			// Set the first button as active by default
-			setActiveButton(bodyButton);
+
+			// Store reference to setActiveButton for external access
+			self.setActiveButton = setActiveButton;
+			self.buttons = {
+				skeleton: skeletonButton,
+				body: bodyButton,
+				organs: organsButton
+			};
 
 			if (skeletonButton) {
 				skeletonButton.addEventListener('click', function () {
@@ -62,6 +68,13 @@ define([
 				});
 			}
 		}, 100);
+	};
+
+	// update the active button based on current model
+	modelpalette.ModelPalette.prototype.updateActiveModel = function (modelName) {
+		if (this.setActiveButton && this.buttons && this.buttons[modelName]) {
+			this.setActiveButton(this.buttons[modelName]);
+		}
 	};
 
 	// Fire custom events
@@ -93,6 +106,12 @@ define([
 			},
 			setupModelButtons: {
 				value: modelpalette.ModelPalette.prototype.setupModelButtons,
+				enumerable: true,
+				configurable: true,
+				writable: true,
+			},
+			updateActiveModel: {
+				value: modelpalette.ModelPalette.prototype.updateActiveModel,
 				enumerable: true,
 				configurable: true,
 				writable: true,

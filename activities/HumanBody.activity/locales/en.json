@@ -49,6 +49,8 @@
 	"TutorialNext": "Next",
 	"FullScreenTitle": "Full Screen",
 	"FullScreenIntro": "Click here to toggle full screen mode. This will allow you to view the Human Body activity in full screen for a better experience.",
+	"TutorialOrientationTitle" : "Orientation",
+	"TutorialOrientationIntro" : "Select the arrow pointing in the direction you want to rotate the board.",
 
 	"Skull": "Skull",
 	"Spine": "Spine",

@@ -49,6 +49,8 @@
 	"TutorialNext": "Suiv",
 	"FullScreenTitle": "Plein Écran",
 	"FullScreenIntro": "Cliquez ici pour basculer en mode plein écran. Cela vous permettra de visualiser l'activité Corps Humain en plein écran pour une meilleure expérience.",
+	"TutorialOrientationTitle": "Orientation",
+	"TutorialOrientationIntro": "Sélectionnez la flèche pointant dans la direction dans laquelle vous souhaitez faire pivoter le tableau.",
 
 	"Skull": "Crâne",
 	"Spine": "Colonne vertébrale",
