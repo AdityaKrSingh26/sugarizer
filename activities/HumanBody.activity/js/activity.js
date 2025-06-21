@@ -30,6 +30,9 @@ define([
 		let currentModelName = "body";
 		let partsColored = [];
 		let modal = null;
+		let cameraPosition = { x: 0, y: 10, z: 20 };
+		let cameraTarget = { x: 0, y: 0, z: 0 };
+		let cameraFov = 45;
 
 		// MODE VARIABLES  
 		let isPaintActive = true;
@@ -118,11 +121,30 @@ define([
 					modelPaintData[currentModelName] = [...partsColored];
 				}
 
-				// Save all model paint data along with current model
+				// Save current camera position and settings
+				cameraPosition = {
+					x: camera.position.x,
+					y: camera.position.y,
+					z: camera.position.z
+				};
+
+				// Get the target from orbit controls
+				cameraTarget = {
+					x: orbit.target.x,
+					y: orbit.target.y,
+					z: orbit.target.z
+				};
+
+				cameraFov = camera.fov;
+
+				// Save all data including camera state
 				const saveData = {
 					modelName: currentModelName,
 					modelPaintData: modelPaintData,
 					partsColored: partsColored,
+					cameraPosition: cameraPosition,
+					cameraTarget: cameraTarget,
+					cameraFov: cameraFov
 				};
 
 				var jsonData = JSON.stringify(saveData);
@@ -192,6 +214,22 @@ define([
 								};
 							}
 
+							// Load camera state if available
+							if (savedData.cameraPosition) {
+								cameraPosition = savedData.cameraPosition;
+								console.log("Loaded camera position:", cameraPosition);
+							}
+
+							if (savedData.cameraTarget) {
+								cameraTarget = savedData.cameraTarget;
+								console.log("Loaded camera target:", cameraTarget);
+							}
+
+							if (savedData.cameraFov) {
+								cameraFov = savedData.cameraFov;
+								console.log("Loaded camera FOV:", cameraFov);
+							}
+
 							// Check if saved data includes model information
 							if (savedData.modelName && availableModels[savedData.modelName]) {
 								currentModelName = savedData.modelName;
@@ -218,16 +256,20 @@ define([
 							} else {
 								partsColored = savedData;
 								currentModelName = "body";
-								modelPaintData.body = [...partsColored];
+								if (Array.isArray(partsColored)) {
+									modelPaintData.body = [...partsColored];
+								}
 							}
 
 							loadModel({
 								...availableModels[currentModelName],
 								callback: (loadedModel) => {
 									currentModel = loadedModel;
-									// Apply saved colors after model loads and body parts are updated
 									setTimeout(() => {
 										applyModelColors(loadedModel, currentModelName);
+
+										// Restore camera position after model is loaded
+										restoreCameraPosition(cameraPosition, cameraTarget, cameraFov);
 									}, 100);
 								}
 							});
@@ -1159,8 +1201,9 @@ define([
 		const ambientLight = new THREE.AmbientLight(0x222222); // Soft ambient lighting
 		scene.add(ambientLight);
 
-		camera.position.set(0, 10, 20);
-		camera.lookAt(0, 0, 0);
+		camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
+		camera.fov = cameraFov;
+		camera.lookAt(cameraTarget.x, cameraTarget.y, cameraTarget.z);
 
 		const orbit = new OrbitControls.OrbitControls(
 			camera,
@@ -1168,6 +1211,32 @@ define([
 		);
 		orbit.update();
 		orbit.listenToKeyEvents(document.querySelector("body"));
+
+		function restoreCameraPosition(savedCameraPosition, savedCameraTarget, savedCameraFov) {
+			if (savedCameraPosition) {
+				camera.position.set(
+					savedCameraPosition.x,
+					savedCameraPosition.y,
+					savedCameraPosition.z
+				);
+			}
+
+			if (savedCameraTarget) {
+				orbit.target.set(
+					savedCameraTarget.x,
+					savedCameraTarget.y,
+					savedCameraTarget.z
+				);
+				camera.lookAt(savedCameraTarget.x, savedCameraTarget.y, savedCameraTarget.z);
+			}
+
+			if (savedCameraFov) {
+				camera.fov = savedCameraFov;
+			}
+
+			camera.updateProjectionMatrix();
+			orbit.update();
+		}
 
 		const loader = new THREE.GLTFLoader();
 		let skeleton;
