@@ -55,7 +55,7 @@ define([
 			if (tourButton) {
 				tourButton.addEventListener("click", function () {
 					document.dispatchEvent(new CustomEvent('mode-selected', 
-						{ detail: { mode: 2 } }
+						{ detail: { mode: 1 } }
 					));
 					 updateSettingsIcon('compass');
 					 setActiveButton(tourButton);
@@ -66,7 +66,7 @@ define([
 			if (doctorButton) {
 				doctorButton.addEventListener("click", function () {
 					document.dispatchEvent(new CustomEvent('mode-selected', 
-						{ detail: { mode: 3 } }
+						{ detail: { mode: 2 } }
 					));
 					updateSettingsIcon('doctor');
 					setActiveButton(doctorButton);

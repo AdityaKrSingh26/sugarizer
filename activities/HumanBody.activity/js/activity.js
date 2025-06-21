@@ -51,6 +51,10 @@ define([
 		let firstAnswer = true;
 		let numModals = 0;
 
+		let tourIndex = 0;
+		let previousMesh = null;
+		let tourTimer = null;
+
 		// Body parts data for different models
 		let bodyPartsData = {
 			skeleton: [],
@@ -158,7 +162,6 @@ define([
 			if (!environment.objectId) {
 				console.log("New instance");
 				currentModelName = "body";
-				// Initialize all model paint data
 				modelPaintData = {
 					skeleton: [],
 					body: [],
@@ -182,7 +185,6 @@ define([
 								modelPaintData = savedData.modelPaintData;
 								console.log("Loaded model paint data:", modelPaintData);
 							} else {
-								// Initialize empty paint data for all models
 								modelPaintData = {
 									skeleton: [],
 									body: [],
@@ -200,7 +202,6 @@ define([
 									partsColored = [...modelPaintData[currentModelName]];
 								}
 							} else {
-								// Legacy format - assume it's just partsColored array for body model
 								partsColored = savedData;
 								currentModelName = "body";
 								modelPaintData.body = [...partsColored];
@@ -218,7 +219,6 @@ define([
 							});
 						} else {
 							currentModelName = "body";
-							// Initialize empty paint data
 							modelPaintData = {
 								skeleton: [],
 								body: [],
@@ -258,7 +258,7 @@ define([
 					const worldPosition = node.getWorldPosition(new THREE.Vector3());
 
 					const meshInfo = {
-						name: node.name.replace(/_Material\d+mat_\d+$/, ''), // Clean up material suffix if needed
+						name: node.name.replace(/_Material\d+mat_\d+$/, ''),
 						mesh: node.name,
 						position: [
 							parseFloat(worldPosition.x.toFixed(2)),
@@ -449,21 +449,27 @@ define([
 			modelButton.classList.remove('skeleton-icon', 'body-icon', 'organs-icon');
 			modelButton.classList.add(`${modelKey}-icon`);
 
+			// Broadcast model change to other users
+			if (presence && isHost) {
+				presence.sendMessage(presence.getSharedInfo().id, {
+					user: presence.getUserInfo(),
+					action: "switchModel",
+					content: modelKey,
+				});
+			}
+
 			// Load new model
 			const modelConfig = availableModels[modelKey];
 			loadModel({
 				...modelConfig,
 				callback: (loadedModel) => {
 					currentModel = loadedModel;
-					console.log(`Successfully loaded ${modelKey} model`);
-
-					// Apply saved colors for this model type
 					applyModelColors(loadedModel, modelKey);
 				}
 			});
 		}
 		
-		// function to apply saved colors based on model type
+		// apply saved colors based on model type
 		function applyModelColors(model, modelName) {
 			model.traverse((node) => {
 				if (node.isMesh) {
@@ -605,7 +611,74 @@ define([
 				isTourActive = false;
 				isDoctorActive = true;
 			}
+
+			if (msg.action == "switchModel") {
+				const newModel = msg.content;
+				if (currentModelName !== newModel) {
+					switchModel(newModel);
+				}
+			}
+
+			if (msg.action == "modeChange") {
+				const newModeIndex = msg.content;
+				if (currentModeIndex !== newModeIndex) {
+					currentModeIndex = newModeIndex;
+					updateModeText();
+				}
+			}
+
+			if (msg.action == "paint") {
+				const { objectName, color, bodyPartName, modelName } = msg.content;
+				applyPaintFromNetwork(objectName, color, bodyPartName, msg.user.name, modelName);
+			}
+
+			if (msg.action == "syncAllPaintData") {
+				const { modelPaintData: receivedPaintData, currentModel: senderCurrentModel } = msg.content;
+
+				// Merge received paint data with local data
+				Object.keys(receivedPaintData).forEach(modelKey => {
+					if (!modelPaintData[modelKey]) {
+						modelPaintData[modelKey] = [];
+					}
+
+					// Merge paint data for this model
+					receivedPaintData[modelKey].forEach(([partName, color]) => {
+						const existingIndex = modelPaintData[modelKey].findIndex(([name, _]) => name === partName);
+						if (existingIndex !== -1) {
+							modelPaintData[modelKey].splice(existingIndex, 1);
+						}
+						modelPaintData[modelKey].push([partName, color]);
+					});
+				});
+
+				// If we're on the same model as sender, apply the colors
+				if (senderCurrentModel === currentModelName) {
+					partsColored = [...modelPaintData[currentModelName]];
+					if (currentModel) {
+						applyModelColors(currentModel, currentModelName);
+					}
+				}
+			}
+
+			if (msg.action == "tourStep") {
+				const { index, partName } = msg.content;
+				syncTourStep(index, partName);
+			}
 		};
+
+		function sendFullPaintDataToNewUser() {
+			if (presence && isHost) {
+				// Send model-specific paint data
+				presence.sendMessage(presence.getSharedInfo().id, {
+					user: presence.getUserInfo(),
+					action: "syncAllPaintData",
+					content: {
+						modelPaintData: modelPaintData,
+						currentModel: currentModelName
+					},
+				});
+			}
+		}
 
 		var onNetworkUserChanged = function (msg) {
 			players.push([msg.user.name, 0]);
@@ -613,6 +686,9 @@ define([
 				showLeaderboard();
 			}
 			if (isHost) {
+				// Send full paint data instead of just current model data
+				sendFullPaintDataToNewUser();
+
 				presence.sendMessage(presence.getSharedInfo().id, {
 					user: presence.getUserInfo(),
 					action: "init",
@@ -655,8 +731,8 @@ define([
 
 			// Update mode tracking variables
 			isPaintActive = currentModeIndex === 0;
-			isTourActive = currentModeIndex === 2;
-			isDoctorActive = currentModeIndex === 3;
+			isTourActive = currentModeIndex === 1;
+			isDoctorActive = currentModeIndex === 2;
 
 			// If switching to Tour mode, start it
 			if (isTourActive) {
@@ -683,8 +759,13 @@ define([
 		}
 		
 		function startTourMode() {
-			let tourIndex = 0;
-			let previousMesh = null;
+			tourIndex = 0;
+			previousMesh = null;
+
+			// Clear any existing tour timer
+			if (tourTimer) {
+				clearTimeout(tourTimer);
+			}
 
 			function tourNextPart() {
 				if (tourIndex >= bodyParts.length || !isTourActive) {
@@ -919,6 +1000,7 @@ define([
 				partsColored.push([bodyParts[i].name, "#000000"]);
 			}
 		}
+
 		loadAllBodyPartsData();
 
 		function showModal(text) {
@@ -1124,7 +1206,7 @@ define([
 			if (intersects.length > 0) console.log(intersects[0].point);
 		}
 
-		function showPaintModal(bodyPartName) {
+		function showPaintModal(bodyPartName, userName = null) {
 			// Check if a paint modal is already displayed and remove it
 			let existingPaintModal = document.querySelector('.paint-modal');
 			if (existingPaintModal) {
@@ -1133,7 +1215,13 @@ define([
 
 			const paintModal = document.createElement("div");
 			paintModal.className = "paint-modal";
-			paintModal.innerHTML = l10n.get(bodyPartName);
+
+			if (userName) {
+				paintModal.innerHTML = `${userName} painted: ${l10n.get(bodyPartName)}`;
+			} else {
+				paintModal.innerHTML = l10n.get(bodyPartName);
+			}
+
 			document.body.appendChild(paintModal);
 
 			// Trigger fade-in animation
@@ -1145,8 +1233,6 @@ define([
 			setTimeout(() => {
 				if (paintModal && paintModal.parentNode === document.body) {
 					paintModal.classList.remove('show');
-
-					// Remove after animation completes
 					setTimeout(() => {
 						if (paintModal && paintModal.parentNode === document.body) {
 							document.body.removeChild(paintModal);
@@ -1156,11 +1242,71 @@ define([
 			}, 2000);
 		}
 
+
+		// apply paint received from network
+		function applyPaintFromNetwork(objectName, color, bodyPartName, userName, modelName = null) {
+		
+			// Only apply paint if it's for the current model
+			if (modelName && modelName !== currentModelName) {
+				// Store the paint data for the specific model even if not currently active
+				if (modelPaintData[modelName]) {
+					const modelIndex = modelPaintData[modelName].findIndex(([name, paintColor]) => name === objectName);
+					if (modelIndex !== -1) {
+						modelPaintData[modelName].splice(modelIndex, 1);
+					}
+					modelPaintData[modelName].push([objectName, color]);
+				}
+				return;
+			}
+
+			if (!currentModel) return;
+
+			const object = currentModel.getObjectByName(objectName);
+			if (!object) return;
+
+			// Store original material
+			if (!object.userData.originalMaterial) {
+				object.userData.originalMaterial = object.material.clone();
+			}
+
+			// Update partsColored array
+			const index = partsColored.findIndex(([name, paintColor]) => name === objectName);
+			if (index !== -1) {
+				partsColored.splice(index, 1);
+			}
+			partsColored.push([objectName, color]);
+
+			// Update model-specific paint data
+			if (currentModelName && modelPaintData[currentModelName]) {
+				const modelIndex = modelPaintData[currentModelName].findIndex(([name, paintColor]) => name === objectName);
+				if (modelIndex !== -1) {
+					modelPaintData[currentModelName].splice(modelIndex, 1);
+				}
+				modelPaintData[currentModelName].push([objectName, color]);
+			}
+
+			// Apply color
+			if (color !== "#ffffff" && color !== "#000000") {
+				object.material = new THREE.MeshStandardMaterial({
+					color: new THREE.Color(color),
+					side: THREE.DoubleSide,
+					transparent: false,
+					opacity: 1.0,
+					depthTest: true,
+					depthWrite: true
+				});
+			} else {
+				object.material = object.userData.originalMaterial.clone();
+			}
+
+			// Show modal with user info
+			showPaintModal(bodyPartName, userName);
+		}
+
+
 		// handle the click event for painting
 		function handlePaintMode(object) {
-
 			if (!object.userData.originalMaterial) {
-				// Store original material if not already stored
 				object.userData.originalMaterial = object.material.clone();
 			}
 
@@ -1171,6 +1317,8 @@ define([
 			// Find the body part name for the modal
 			let clickedBodyPart = bodyParts.find((part) => part.mesh === object.name);
 			let bodyPartName = clickedBodyPart ? clickedBodyPart.name : object.name;
+
+			// Show local modal without username
 			showPaintModal(bodyPartName);
 
 			const index = partsColored.findIndex(([name, color]) => name === object.name);
@@ -1181,9 +1329,16 @@ define([
 			const newColor = isDefaultColor ? fillColor : "#ffffff";
 			partsColored.push([object.name, newColor]);
 
-			// Apply new material
+			// Update model-specific paint data
+			if (currentModelName && modelPaintData[currentModelName]) {
+				const modelIndex = modelPaintData[currentModelName].findIndex(([name, color]) => name === object.name);
+				if (modelIndex !== -1) {
+					modelPaintData[currentModelName].splice(modelIndex, 1);
+				}
+				modelPaintData[currentModelName].push([object.name, newColor]);
+			}
+
 			if (isDefaultColor) {
-				// Apply fill color
 				object.material = new THREE.MeshStandardMaterial({
 					color: new THREE.Color(fillColor),
 					side: THREE.DoubleSide,
@@ -1193,17 +1348,20 @@ define([
 					depthWrite: true
 				});
 			} else {
-				// Restore original material
 				object.material = object.userData.originalMaterial.clone();
 				console.log("Restored original material");
 			}
 
-			// Sync with network if available
 			if (presence) {
 				presence.sendMessage(presence.getSharedInfo().id, {
 					user: presence.getUserInfo(),
-					action: "init",
-					content: [partsColored, players],
+					action: "paint",
+					content: {
+						objectName: object.name,
+						color: newColor,
+						bodyPartName: bodyPartName,
+						modelName: currentModelName
+					},
 				});
 			}
 		}
