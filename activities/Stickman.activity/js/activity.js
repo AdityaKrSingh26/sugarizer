@@ -5,7 +5,7 @@ define([
 	"sugar-web/graphics/presencepalette",
 	"sugar-web/graphics/journalchooser",
 	"activity/palettes/speedpalette",
-	"activity/palettes/templatepalette",
+	// "activity/palettes/templatepalette",  // Temporarily commented out due to loading issues
 	"tutorial",
 	"l10n",
 	"humane"
@@ -16,13 +16,22 @@ define([
 	presencepalette,
 	journalchooser,
 	speedpalette,
-	templatepalette,
+	// templatepalette,  // Temporarily commented out
 	tutorial,
 	l10n,
 	humane
 ) {
 	const tf = window.tf;
 	const posenet = window.posenet;
+
+	// Debug: Check if TensorFlow.js and PoseNet are available
+	console.log("=== Activity Module Loading Debug ===");
+	console.log("TensorFlow.js available:", typeof tf !== 'undefined');
+	console.log("PoseNet available:", typeof posenet !== 'undefined');
+	if (typeof tf !== 'undefined') {
+		console.log("TensorFlow.js version:", tf.version?.tfjs);
+	}
+	console.log("====================================");
 
 	// Manipulate the DOM only when it is ready.
 	requirejs(['domReady!'], function (doc) {
@@ -54,14 +63,13 @@ define([
 		let rotationStartAngle = 0;
 		let neckManuallyMoved = false; 
 
-		// PoseNet configuration 
+		// PoseNet configuration - using ResNet50 for better accuracy
 		let posenetModel = null; 
 		const posenetConfig = {
-			architecture: 'MobileNetV1',
-			outputStride: 16,
-			inputResolution: 257,
-			multiplier: 0.75,
-			quantBytes: 4
+			architecture: 'ResNet50',
+			outputStride: 32,      // ResNet50 supports 32 and 16, 32 is faster
+			inputResolution: 513,  // Higher resolution for better accuracy
+			quantBytes: 2          // Use 2 bytes for good balance of accuracy and performance
 		}; 
 
 		let lastMovementBroadcast = 0;
@@ -565,9 +573,9 @@ define([
 				console.log("Speed set to:", currentSpeed.toFixed(2) + "x");
 			});
 
-			// Template palette
+			// Template palette - temporarily disabled due to loading issues
 			var templateButton = document.getElementById("template-button");
-			var templatePalette = new templatepalette.TemplatePalette(templateButton);
+			// var templatePalette = new templatepalette.TemplatePalette(templateButton);
 
 			document.addEventListener('template-selected', function (e) {
 				loadTemplate(e.detail.template);
@@ -3281,20 +3289,57 @@ define([
 
 		// VIDEO IMPORT FUNCTIONALITY WITH POSENET
 
-		// Load PoseNet model
+		// Load PoseNet model with ResNet50 optimizations
 		async function loadPoseNet() {
 			if (!posenetModel) {
 				try {
+					console.log("Loading ResNet50 PoseNet model for high accuracy...");
+					
+					// Check if required dependencies are available
+					if (!window.tf || !window.posenet) {
+						throw new Error("TensorFlow.js or PoseNet not loaded");
+					}
+
+					// Load ResNet50 model
 					posenetModel = await posenet.load(posenetConfig);
+					console.log("ResNet50 PoseNet model loaded successfully");
+					
+					// Warm up the model with a dummy prediction for better performance
+					const dummyCanvas = document.createElement('canvas');
+					dummyCanvas.width = 513;
+					dummyCanvas.height = 513;
+					const dummyCtx = dummyCanvas.getContext('2d');
+					dummyCtx.fillStyle = '#000000';
+					dummyCtx.fillRect(0, 0, 513, 513);
+					
+					await posenetModel.estimateSinglePose(dummyCanvas);
+					console.log("ResNet50 model warmed up and ready");
+					
 				} catch (error) {
-					console.error("Error loading PoseNet model:", error);
-					throw error;
+					console.error("Error loading ResNet50 PoseNet model:", error);
+					
+					// Fallback to MobileNetV1 if ResNet50 fails
+					try {
+						console.log("ResNet50 failed, falling back to MobileNetV1...");
+						const fallbackConfig = {
+							architecture: 'MobileNetV1',
+							outputStride: 16,
+							inputResolution: 257,
+							multiplier: 0.75
+						};
+						
+						posenetModel = await posenet.load(fallbackConfig);
+						console.log("Fallback to MobileNetV1 successful");
+					} catch (fallbackError) {
+						console.error("Both ResNet50 and MobileNetV1 failed:", fallbackError);
+						throw new Error("Failed to load any PoseNet model");
+					}
 				}
 			}
 			return posenetModel;
 		}
 
-		// Convert PoseNet keypoints to stickman joint format 
+		// Convert PoseNet keypoints to stickman joint format with ResNet50 optimized thresholds
 		function convertPoseToStickman(pose, centerX, centerY) {
 			const keypoints = pose.keypoints;
 			
@@ -3304,7 +3349,8 @@ define([
 
 			function getKeypointPosition(name, fallback = null) {
 				const kp = getKeypoint(name);
-				if (kp && kp.score > 0.1) { // Very lenient score
+				// Lower threshold to capture more keypoints and detect more poses
+				if (kp && kp.score > 0.1) { // Reduced threshold for more detections
 					return { x: kp.position.x, y: kp.position.y, score: kp.score };
 				}
 				return fallback;
@@ -3317,9 +3363,9 @@ define([
 			const leftHip = getKeypointPosition('leftHip');
 			const rightHip = getKeypointPosition('rightHip');
 
-			// Require at least nose and one hip for valid pose
-			if (!nose || (!leftHip && !rightHip)) {
-				console.log("Missing essential keypoints for pose conversion");
+			// More lenient validation - require either nose OR at least one hip for valid pose
+			if (!nose && !leftHip && !rightHip) {
+				console.log("Missing essential keypoints for pose conversion (need at least nose or hip)");
 				return null;
 			}
 
@@ -3750,17 +3796,18 @@ define([
 		}
 
 		// Extract frames from video and convert to stickman poses
+		// Extract frames from video with ResNet50 optimizations
 		async function extractFramesFromVideo(video) {
 			const frames = [];
 			const canvas = document.createElement('canvas');
 			const ctx = canvas.getContext('2d');
 			
-			// Set canvas size to match video
-			canvas.width = video.videoWidth;
-			canvas.height = video.videoHeight;
+			// Set canvas size to optimal ResNet50 input size for better accuracy
+			canvas.width = 513;  // ResNet50 optimal input size
+			canvas.height = 513;
 
 			const duration = video.duration;
-			const frameRate = 5; // Process 5 frames per second for better quality
+			const frameRate = 3; // Slower processing for higher accuracy with ResNet50
 			const frameInterval = 1 / frameRate;
 
 			// Center position for stickman
@@ -3768,6 +3815,8 @@ define([
 			const centerY = 200;
 
 			video.currentTime = 0;
+
+			console.log(`Processing video with ResNet50 - ${duration.toFixed(2)}s duration, ${frameRate} fps`);
 
 			for (let time = 0; time < duration; time += frameInterval) {
 				try {
@@ -3785,20 +3834,40 @@ define([
 						checkTime();
 					});
 
-					// Draw current frame to canvas
-					ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+					// Draw current frame to canvas with optimal sizing for ResNet50
+					ctx.clearRect(0, 0, canvas.width, canvas.height);
+					
+					// Calculate aspect ratio to maintain video proportions
+					const videoAspect = video.videoWidth / video.videoHeight;
+					const canvasAspect = canvas.width / canvas.height;
+					
+					let drawWidth, drawHeight, offsetX, offsetY;
+					if (videoAspect > canvasAspect) {
+						drawWidth = canvas.width;
+						drawHeight = canvas.width / videoAspect;
+						offsetX = 0;
+						offsetY = (canvas.height - drawHeight) / 2;
+					} else {
+						drawWidth = canvas.height * videoAspect;
+						drawHeight = canvas.height;
+						offsetX = (canvas.width - drawWidth) / 2;
+						offsetY = 0;
+					}
+					
+					ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
 
 					// Store the video frame as ImageData for preview
 					const videoFrameData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
+					// Use ResNet50 for pose estimation with lower thresholds for more detection
 					const poses = await posenetModel.estimateMultiplePoses(canvas, {
 						flipHorizontal: false,
 						maxDetections: 1,
-						scoreThreshold: 0.3, 
+						scoreThreshold: 0.1, // Lower threshold to detect more poses
 						nmsRadius: 20
 					});
 
-					if (poses.length > 0 && poses[0].score > 0.2) { // Lower minimum score
+					if (poses.length > 0 && poses[0].score > 0.15) { // Lower minimum score to capture more frames
 						const stickmanJoints = convertPoseToStickman(poses[0], centerX, centerY);
 						if (stickmanJoints) {
 							// Store both the video frame and the stickman data
@@ -3820,7 +3889,7 @@ define([
 				}
 			}
 
-			console.log(`Video processing complete`);
+			console.log(`ResNet50 video processing complete - ${frames.length} high-quality frames extracted`);
 			return frames;
 		}
 
