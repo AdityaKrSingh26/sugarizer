@@ -3807,7 +3807,7 @@ define([
 			canvas.height = 513;
 
 			const duration = video.duration;
-			const frameRate = 3; // Slower processing for higher accuracy with ResNet50
+			const frameRate = 10; // Increased to 10 fps for smoother animation
 			const frameInterval = 1 / frameRate;
 
 			// Center position for stickman
@@ -3818,21 +3818,33 @@ define([
 
 			console.log(`Processing video with ResNet50 - ${duration.toFixed(2)}s duration, ${frameRate} fps`);
 
+			let lastPoseKeypoints = null; // Track last pose to detect duplicates
+
 			for (let time = 0; time < duration; time += frameInterval) {
 				try {
 					video.currentTime = time;
 					
-					// Wait for video to seek to the correct time
-					await new Promise(resolve => {
+					// Wait for video to seek to the correct time with timeout
+					await new Promise((resolve, reject) => {
+						let attempts = 0;
+						const maxAttempts = 50; // Maximum wait attempts
+						
 						const checkTime = () => {
-							if (Math.abs(video.currentTime - time) < 0.1) {
+							attempts++;
+							if (Math.abs(video.currentTime - time) < 0.05) { // Tighter tolerance
 								resolve();
+							} else if (attempts >= maxAttempts) {
+								console.warn(`Video seek timeout at ${time.toFixed(2)}s`);
+								resolve(); // Continue anyway
 							} else {
 								requestAnimationFrame(checkTime);
 							}
 						};
 						checkTime();
 					});
+
+					// Force a small delay to ensure frame is rendered
+					await new Promise(resolve => setTimeout(resolve, 10));
 
 					// Draw current frame to canvas with optimal sizing for ResNet50
 					ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -3868,16 +3880,55 @@ define([
 					});
 
 					if (poses.length > 0 && poses[0].score > 0.15) { // Lower minimum score to capture more frames
-						const stickmanJoints = convertPoseToStickman(poses[0], centerX, centerY);
-						if (stickmanJoints) {
-							// Store both the video frame and the stickman data
-							frames.push({
-								joints: stickmanJoints,
-								videoFrame: videoFrameData,
-								pose: poses[0],
-								timestamp: time
-							});
-							console.log(`✓ Frame ${frames.length} processed at ${time.toFixed(2)}s - Score: ${poses[0].score.toFixed(3)}`);
+						// Check if this pose is significantly different from the last one
+						const currentPose = poses[0];
+						let isDuplicatePose = false;
+						
+						if (lastPoseKeypoints) {
+							// Compare key landmarks to detect duplicate poses
+							const threshold = 8; // Reduced threshold - more sensitive to smaller movements
+							let similarityCount = 0;
+							const keyLandmarks = ['nose', 'leftShoulder', 'rightShoulder', 'leftHip', 'rightHip'];
+							let totalComparisons = 0;
+							
+							for (const landmark of keyLandmarks) {
+								const lastKp = lastPoseKeypoints.find(kp => kp.part === landmark);
+								const currentKp = currentPose.keypoints.find(kp => kp.part === landmark);
+								
+								if (lastKp && currentKp && lastKp.score > 0.1 && currentKp.score > 0.1) {
+									totalComparisons++;
+									const distance = Math.sqrt(
+										Math.pow(lastKp.position.x - currentKp.position.x, 2) + 
+										Math.pow(lastKp.position.y - currentKp.position.y, 2)
+									);
+									if (distance < threshold) {
+										similarityCount++;
+									}
+								}
+							}
+							
+							// Only consider it duplicate if ALL detected landmarks are very similar
+							// AND we have at least 3 landmarks to compare
+							isDuplicatePose = totalComparisons >= 3 && similarityCount === totalComparisons;
+						}
+						
+						if (!isDuplicatePose) {
+							const stickmanJoints = convertPoseToStickman(currentPose, centerX, centerY);
+							if (stickmanJoints) {
+								// Store both the video frame and the stickman data
+								frames.push({
+									joints: stickmanJoints,
+									videoFrame: videoFrameData,
+									pose: currentPose,
+									timestamp: time
+								});
+								console.log(`✓ Frame ${frames.length} processed at ${time.toFixed(2)}s - Score: ${currentPose.score.toFixed(3)}`);
+								
+								// Update last pose for comparison
+								lastPoseKeypoints = currentPose.keypoints;
+							}
+						} else {
+							console.log(`Frame skipped at ${time.toFixed(2)} - Duplicate pose detected`);
 						}
 					} else {
 						console.log(`Frame skipped at ${time.toFixed(2)} - Low score or No pose detected`);
